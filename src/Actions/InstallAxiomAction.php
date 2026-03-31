@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace SimaoCurado\LaravelExtra\Actions;
+namespace SimaoCurado\Axiom\Actions;
 
 use Illuminate\Filesystem\Filesystem;
-use SimaoCurado\LaravelExtra\Data\InstallResult;
-use SimaoCurado\LaravelExtra\Data\InstallSelections;
-use SimaoCurado\LaravelExtra\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Data\InstallResult;
+use SimaoCurado\Axiom\Data\InstallSelections;
+use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
 
-final readonly class InstallLaravelExtraAction
+final readonly class InstallAxiomAction
 {
     public function __construct(private Filesystem $files) {}
 
@@ -143,8 +143,8 @@ final readonly class InstallLaravelExtraAction
 
         if ($selections->installStrictLaravelDefaults) {
             $this->writeFile(
-                path: $basePath.'/config/laravel-extra.php',
-                content: $this->stub('config/laravel-extra.stub'),
+                path: $basePath.'/config/axiom.php',
+                content: $this->stub('config/axiom.stub'),
                 overwrite: $selections->overwriteFiles,
                 written: $written,
                 skipped: $skipped,
@@ -152,8 +152,8 @@ final readonly class InstallLaravelExtraAction
             );
 
             $this->writeFile(
-                path: $basePath.'/app/Providers/LaravelExtraServiceProvider.php',
-                content: $this->stub('providers/LaravelExtraServiceProvider.stub'),
+                path: $basePath.'/app/Providers/AxiomServiceProvider.php',
+                content: $this->stub('providers/AxiomServiceProvider.stub'),
                 overwrite: $selections->overwriteFiles,
                 written: $written,
                 skipped: $skipped,
@@ -162,7 +162,7 @@ final readonly class InstallLaravelExtraAction
 
             $this->registerBootstrapProvider(
                 basePath: $basePath,
-                provider: 'App\\Providers\\LaravelExtraServiceProvider::class',
+                provider: 'App\\Providers\\AxiomServiceProvider::class',
                 overwrite: $selections->overwriteFiles,
                 written: $written,
                 skipped: $skipped,

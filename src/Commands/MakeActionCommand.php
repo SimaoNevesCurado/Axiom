@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace SimaoCurado\LaravelExtra\Commands;
+namespace SimaoCurado\Axiom\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
-use SimaoCurado\LaravelExtra\Support\GeneratesClasses;
+use SimaoCurado\Axiom\Support\GeneratesClasses;
 
 final class MakeActionCommand extends Command
 {

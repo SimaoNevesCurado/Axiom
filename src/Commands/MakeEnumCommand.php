@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace SimaoCurado\LaravelExtra\Commands;
+namespace SimaoCurado\Axiom\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
-use SimaoCurado\LaravelExtra\Support\GeneratesClasses;
+use SimaoCurado\Axiom\Support\GeneratesClasses;
 
 final class MakeEnumCommand extends Command
 {

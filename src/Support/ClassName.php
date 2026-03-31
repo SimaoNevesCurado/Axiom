@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SimaoCurado\LaravelExtra\Support;
+namespace SimaoCurado\Axiom\Support;
 
 final readonly class ClassName
 {

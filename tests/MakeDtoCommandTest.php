@@ -3,7 +3,7 @@
 use Illuminate\Support\Str;
 
 it('creates a readonly dto class in the host project', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
     $originalBasePath = base_path();
 
     mkdir($basePath, 0777, true);
@@ -34,7 +34,7 @@ it('creates a readonly dto class in the host project', function () {
 });
 
 it('creates a dto with promoted readonly properties', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
     $originalBasePath = base_path();
 
     mkdir($basePath, 0777, true);
@@ -64,7 +64,7 @@ it('creates a dto with promoted readonly properties', function () {
 });
 
 it('does not overwrite an existing dto class without force', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
     $originalBasePath = base_path();
 
     mkdir($basePath, 0777, true);

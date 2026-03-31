@@ -1,12 +1,12 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "simaocurado/laravel-extra",
+    "name": "simaocurado/axiom",
     "type": "library",
     "description": "Opinionated Laravel defaults for action-oriented architecture, strict typing, code quality, and team consistency.",
     "keywords": [
         "simaocurado",
         "laravel",
-        "laravel-extra",
+        "axiom",
         "actions",
         "dto",
         "strict-types",
@@ -14,10 +14,10 @@
         "rector",
         "bun"
     ],
-    "homepage": "https://github.com/simaocurado/laravel-extra",
+    "homepage": "https://github.com/simaocurado/axiom",
     "support": {
-        "issues": "https://github.com/simaocurado/laravel-extra/issues",
-        "source": "https://github.com/simaocurado/laravel-extra"
+        "issues": "https://github.com/simaocurado/axiom/issues",
+        "source": "https://github.com/simaocurado/axiom"
     },
     "license": "MIT",
     "authors": [
@@ -47,12 +47,12 @@
     },
     "autoload": {
         "psr-4": {
-            "SimaoCurado\\LaravelExtra\\": "src/"
+            "SimaoCurado\\Axiom\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "SimaoCurado\\LaravelExtra\\Tests\\": "tests/",
+            "SimaoCurado\\Axiom\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
@@ -74,7 +74,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "SimaoCurado\\LaravelExtra\\LaravelExtraServiceProvider"
+                "SimaoCurado\\Axiom\\AxiomServiceProvider"
             ]
         }
     },

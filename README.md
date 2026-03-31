@@ -1,11 +1,11 @@
-# Laravel Extra
+# Axiom
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/simaocurado/laravel-extra.svg?style=flat-square)](https://packagist.org/packages/simaocurado/laravel-extra)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/simaocurado/laravel-extra/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/simaocurado/laravel-extra/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/simaocurado/laravel-extra/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/simaocurado/laravel-extra/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/simaocurado/laravel-extra.svg?style=flat-square)](https://packagist.org/packages/simaocurado/laravel-extra)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/simaocurado/axiom.svg?style=flat-square)](https://packagist.org/packages/simaocurado/axiom)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/simaocurado/axiom/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/simaocurado/axiom/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/simaocurado/axiom/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/simaocurado/axiom/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/simaocurado/axiom.svg?style=flat-square)](https://packagist.org/packages/simaocurado/axiom)
 
-`laravel-extra` is an opinionated package for Laravel projects that want stronger defaults from day one.
+`axiom` is an opinionated package for Laravel projects that want stronger defaults from day one.
 
 It brings the same direction used in my starter kits into an existing Laravel app: actions, DTOs, enums, stricter quality tooling, AI guidelines, and a more disciplined baseline for code generation and project setup.
 
@@ -27,19 +27,19 @@ Current target support: Laravel 11, 12, and 13.
 Install the package:
 
 ```bash
-composer require simaocurado/laravel-extra
+composer require simaocurado/axiom
 ```
 
 Run the installer:
 
 ```bash
-php artisan laravel-extra:install
+php artisan axiom:install
 ```
 
 You can also run it non-interactively:
 
 ```bash
-php artisan laravel-extra:install \
+php artisan axiom:install \
   --ai=boost \
   --skills \
   --actions \
@@ -58,7 +58,7 @@ The installer can:
 - publish `.ai/skills/*.md`
 - create `app/Actions` and `app/Dto`
 - publish `phpstan.neon`, `rector.php`, `pint.json`, and `tests/Unit/ArchTest.php`
-- publish a host `App\Providers\LaravelExtraServiceProvider`
+- publish a host `App\Providers\AxiomServiceProvider`
 - register that provider in `bootstrap/providers.php` when available
 - add opinionated `composer` scripts
 - add optional PHP quality `require-dev` dependencies
@@ -80,7 +80,7 @@ When you enable architecture-related options, the installer prepares the host pr
 
 ## Commands
 
-- `php artisan laravel-extra:install`
+- `php artisan axiom:install`
 - `php artisan make:action Name`
 - `php artisan make:dto Name`
 - `php artisan make:enum Name`
@@ -117,7 +117,7 @@ When you enable architecture-related options, the installer prepares the host pr
 
 ## Quality Presets
 
-When enabled, Laravel Extra can publish:
+When enabled, Axiom can publish:
 
 - `phpstan.neon`
 - `rector.php`
@@ -150,7 +150,7 @@ When strict defaults are enabled, the published host provider configures:
 
 ## AI Guidelines And Skills
 
-Laravel Extra separates global guidance from task-focused workflows:
+Axiom separates global guidance from task-focused workflows:
 
 - guidelines: `AGENTS.md` / `CLAUDE.md`
 - skills: `.ai/skills/*.md`

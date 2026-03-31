@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace SimaoCurado\LaravelExtra\Commands;
+namespace SimaoCurado\Axiom\Commands;
 
 use Illuminate\Console\Command;
-use SimaoCurado\LaravelExtra\Actions\InstallLaravelExtraAction;
-use SimaoCurado\LaravelExtra\Data\InstallSelections;
-use SimaoCurado\LaravelExtra\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Actions\InstallAxiomAction;
+use SimaoCurado\Axiom\Data\InstallSelections;
+use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\select;
 
-final class LaravelExtraCommand extends Command
+final class AxiomCommand extends Command
 {
-    protected $signature = 'laravel-extra:install
+    protected $signature = 'axiom:install
         {--ai= : AI guideline preset (boost, codex, claude, none)}
-        {--skills : Install Laravel Extra AI skills into .ai/skills}
+        {--skills : Install Axiom AI skills into .ai/skills}
         {--actions : Install action-oriented architecture guidance}
         {--quality : Install quality and tooling guidance}
         {--strict : Install strict Laravel defaults config}
@@ -25,9 +25,9 @@ final class LaravelExtraCommand extends Command
         {--frontend-deps : Add recommended frontend quality dev dependencies to package.json}
         {--force : Overwrite existing files}';
 
-    protected $description = 'Install opinionated Laravel Extra presets into the host application';
+    protected $description = 'Install opinionated Axiom presets into the host application';
 
-    public function handle(InstallLaravelExtraAction $installLaravelExtra): int
+    public function handle(InstallAxiomAction $installAxiom): int
     {
         $selections = new InstallSelections(
             aiGuidelines: $this->resolveAiGuidelines(),
@@ -62,10 +62,10 @@ final class LaravelExtraCommand extends Command
             overwriteFiles: (bool) $this->option('force'),
         );
 
-        $result = $installLaravelExtra->handle($selections, base_path());
+        $result = $installAxiom->handle($selections, base_path());
 
         $this->newLine();
-        $this->components->info('Laravel Extra installer finished.');
+        $this->components->info('Axiom installer finished.');
 
         if ($result->written !== []) {
             $this->line('  Created or updated:');

@@ -3,7 +3,7 @@
 use Illuminate\Support\Str;
 
 it('installs the selected presets non-interactively', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
     $originalBasePath = base_path();
 
     mkdir($basePath, 0777, true);
@@ -19,7 +19,7 @@ it('installs the selected presets non-interactively', function () {
     app()->setBasePath($basePath);
 
     try {
-        $this->artisan('laravel-extra:install', [
+        $this->artisan('axiom:install', [
             '--ai' => 'boost',
             '--skills' => true,
             '--actions' => true,
@@ -44,8 +44,8 @@ it('installs the selected presets non-interactively', function () {
             ->and($basePath.'/.ai/quality.md')->toBeFile()
             ->and($basePath.'/app/Actions/.gitkeep')->toBeFile()
             ->and($basePath.'/app/Dto/.gitkeep')->toBeFile()
-            ->and($basePath.'/config/laravel-extra.php')->toBeFile()
-            ->and($basePath.'/app/Providers/LaravelExtraServiceProvider.php')->toBeFile()
+            ->and($basePath.'/config/axiom.php')->toBeFile()
+            ->and($basePath.'/app/Providers/AxiomServiceProvider.php')->toBeFile()
             ->and($composer['scripts'])->toHaveKey('setup')
             ->and($composer['scripts'])->toHaveKey('dev')
             ->and($composer['scripts'])->toHaveKey('fix:rector')

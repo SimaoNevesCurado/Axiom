@@ -5,6 +5,6 @@ arch('it will not use debugging functions')
     ->each->not->toBeUsed();
 
 arch('package classes are final')
-    ->expect('SimaoCurado\\LaravelExtra')
+    ->expect('SimaoCurado\\Axiom')
     ->classes()
     ->toBeFinal();

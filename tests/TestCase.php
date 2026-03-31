@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace SimaoCurado\LaravelExtra\Tests;
+namespace SimaoCurado\Axiom\Tests;
 
 use Orchestra\Testbench\TestCase as Orchestra;
-use SimaoCurado\LaravelExtra\LaravelExtraServiceProvider;
+use SimaoCurado\Axiom\AxiomServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
     protected function getPackageProviders($app)
     {
         return [
-            LaravelExtraServiceProvider::class,
+            AxiomServiceProvider::class,
         ];
     }
 

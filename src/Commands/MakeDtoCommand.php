@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace SimaoCurado\LaravelExtra\Commands;
+namespace SimaoCurado\Axiom\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use InvalidArgumentException;
-use SimaoCurado\LaravelExtra\Support\GeneratesClasses;
-use SimaoCurado\LaravelExtra\Support\GeneratorInput;
+use SimaoCurado\Axiom\Support\GeneratesClasses;
+use SimaoCurado\Axiom\Support\GeneratorInput;
 
 final class MakeDtoCommand extends Command
 {

@@ -1,6 +1,6 @@
-# Laravel Extra Claude Guidelines
+# Axiom Claude Guidelines
 
-This project follows Laravel Extra conventions.
+This project follows Axiom conventions.
 
 - Organize business logic into small reusable actions.
 - Prefer DTOs and readonly data objects instead of loose arrays.

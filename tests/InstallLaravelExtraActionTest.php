@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
-use SimaoCurado\LaravelExtra\Actions\InstallLaravelExtraAction;
-use SimaoCurado\LaravelExtra\Data\InstallSelections;
-use SimaoCurado\LaravelExtra\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Actions\InstallAxiomAction;
+use SimaoCurado\Axiom\Data\InstallSelections;
+use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
 
 it('does not overwrite existing files without force', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/AGENTS.md', 'existing');
@@ -22,7 +22,7 @@ it('does not overwrite existing files without force', function () {
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem);
+    $action = new InstallAxiomAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -49,7 +49,7 @@ it('does not overwrite existing files without force', function () {
 });
 
 it('writes claude guidelines to a claude file', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/composer.json', json_encode([
@@ -58,7 +58,7 @@ it('writes claude guidelines to a claude file', function () {
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem);
+    $action = new InstallAxiomAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -78,14 +78,14 @@ it('writes claude guidelines to a claude file', function () {
 
         expect($result->written)->toBe(['CLAUDE.md'])
             ->and($basePath.'/CLAUDE.md')->toBeFile()
-            ->and(file_get_contents($basePath.'/CLAUDE.md'))->toContain('Laravel Extra Claude Guidelines');
+            ->and(file_get_contents($basePath.'/CLAUDE.md'))->toContain('Axiom Claude Guidelines');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
 });
 
 it('creates actions and dto folders when architecture is enabled', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/composer.json', json_encode([
@@ -94,7 +94,7 @@ it('creates actions and dto folders when architecture is enabled', function () {
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem);
+    $action = new InstallAxiomAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -122,7 +122,7 @@ it('creates actions and dto folders when architecture is enabled', function () {
 });
 
 it('adds recommended composer scripts to the host project', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/composer.json', json_encode([
@@ -138,7 +138,7 @@ it('adds recommended composer scripts to the host project', function () {
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem);
+    $action = new InstallAxiomAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -184,7 +184,7 @@ it('adds recommended composer scripts to the host project', function () {
 });
 
 it('adds backend-only composer scripts when the host project has no frontend package file', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/composer.json', json_encode([
@@ -193,7 +193,7 @@ it('adds backend-only composer scripts when the host project has no frontend pac
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem);
+    $action = new InstallAxiomAction(new Filesystem);
 
     try {
         $action->handle(
@@ -230,7 +230,7 @@ it('adds backend-only composer scripts when the host project has no frontend pac
 });
 
 it('publishes ai skills when requested', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/composer.json', json_encode([
@@ -239,7 +239,7 @@ it('publishes ai skills when requested', function () {
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem);
+    $action = new InstallAxiomAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -273,7 +273,7 @@ it('publishes ai skills when requested', function () {
 });
 
 it('publishes quality preset files and strict provider defaults', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/composer.json', json_encode([
@@ -282,7 +282,7 @@ it('publishes quality preset files and strict provider defaults', function () {
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem);
+    $action = new InstallAxiomAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -307,26 +307,26 @@ it('publishes quality preset files and strict provider defaults', function () {
             ->toContain('rector.php')
             ->toContain('pint.json')
             ->toContain('tests/Unit/ArchTest.php')
-            ->toContain('app/Providers/LaravelExtraServiceProvider.php')
+            ->toContain('app/Providers/AxiomServiceProvider.php')
             ->toContain('bootstrap/providers.php')
             ->and($basePath.'/phpstan.neon')->toBeFile()
             ->and($basePath.'/rector.php')->toBeFile()
             ->and($basePath.'/pint.json')->toBeFile()
             ->and($basePath.'/tests/Unit/ArchTest.php')->toBeFile()
-            ->and($basePath.'/app/Providers/LaravelExtraServiceProvider.php')->toBeFile()
+            ->and($basePath.'/app/Providers/AxiomServiceProvider.php')->toBeFile()
             ->and($phpstan)->toContain('vendor/nesbot/carbon/extension.neon')
             ->and($phpstan)->toContain('phar://phpstan.phar/conf/bleedingEdge.neon')
             ->and($phpstan)->toContain('- bootstrap/app.php')
             ->and($phpstan)->toContain('- public')
             ->and($phpstan)->toContain('tmpDir: /tmp/phpstan')
-            ->and($providers)->toContain('App\\Providers\\LaravelExtraServiceProvider::class');
+            ->and($providers)->toContain('App\\Providers\\AxiomServiceProvider::class');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
 });
 
 it('adds php quality dependencies to composer json when requested', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/composer.json', json_encode([
@@ -338,7 +338,7 @@ it('adds php quality dependencies to composer json when requested', function () 
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem);
+    $action = new InstallAxiomAction(new Filesystem);
 
     try {
         $action->handle(
@@ -369,7 +369,7 @@ it('adds php quality dependencies to composer json when requested', function () 
 });
 
 it('adds frontend quality dependencies to package json when requested', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/composer.json', json_encode([
@@ -384,7 +384,7 @@ it('adds frontend quality dependencies to package json when requested', function
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem);
+    $action = new InstallAxiomAction(new Filesystem);
 
     try {
         $action->handle(

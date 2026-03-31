@@ -1,4 +1,4 @@
-<laravel-extra-guidelines>
+<axiom-guidelines>
 === .ai/actions rules ===
 
 # Actions
@@ -51,4 +51,4 @@
 - If available, use `.ai/skills/enum.md` for enum workflows.
 - If available, use `.ai/skills/crud.md` for CRUD workflows.
 - If available, use `.ai/skills/quality.md` for verification and quality workflows.
-</laravel-extra-guidelines>
+</axiom-guidelines>

@@ -3,7 +3,7 @@
 use Illuminate\Support\Str;
 
 it('creates a create crud action with dto support', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
     $originalBasePath = base_path();
 
     mkdir($basePath, 0777, true);
@@ -33,7 +33,7 @@ it('creates a create crud action with dto support', function () {
 });
 
 it('creates a list crud action', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
     $originalBasePath = base_path();
 
     mkdir($basePath, 0777, true);

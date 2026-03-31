@@ -1,8 +1,8 @@
 <?php
 
-use SimaoCurado\LaravelExtra\LaravelExtra;
+use SimaoCurado\Axiom\Axiom;
 
 it('exposes an opinionated package description', function () {
-    expect((new LaravelExtra)::class)
-        ->toBe(LaravelExtra::class);
+    expect((new Axiom)::class)
+        ->toBe(Axiom::class);
 });

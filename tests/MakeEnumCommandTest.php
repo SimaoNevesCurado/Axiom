@@ -3,7 +3,7 @@
 use Illuminate\Support\Str;
 
 it('creates a string backed enum in the host project', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
     $originalBasePath = base_path();
 
     mkdir($basePath, 0777, true);
@@ -30,7 +30,7 @@ it('creates a string backed enum in the host project', function () {
 });
 
 it('creates nested enums', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
     $originalBasePath = base_path();
 
     mkdir($basePath, 0777, true);
@@ -56,7 +56,7 @@ it('creates nested enums', function () {
 });
 
 it('creates an int backed enum when requested', function () {
-    $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
     $originalBasePath = base_path();
 
     mkdir($basePath, 0777, true);

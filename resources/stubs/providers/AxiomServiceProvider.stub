@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\ServiceProvider;
 
-final class LaravelExtraServiceProvider extends ServiceProvider
+final class AxiomServiceProvider extends ServiceProvider
 {
     public function register(): void
     {

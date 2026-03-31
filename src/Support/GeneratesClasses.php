@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SimaoCurado\LaravelExtra\Support;
+namespace SimaoCurado\Axiom\Support;
 
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;

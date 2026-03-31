@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SimaoCurado\LaravelExtra\Data;
+namespace SimaoCurado\Axiom\Data;
 
 final readonly class InstallResult
 {
