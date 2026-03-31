@@ -85,19 +85,12 @@ When you enable architecture-related options, the installer prepares the host pr
 ## Commands
 
 - `php artisan laravel-extra:install`
-  Installs the selected Laravel Extra presets into the host project.
 - `php artisan make:action Name`
-  Creates a single-purpose action in `app/Actions`.
 - `php artisan make:dto Name`
-  Creates a readonly DTO in `app/Dto` with `fromArray()` and `toArray()`.
 - `php artisan make:enum Name`
-  Creates a project enum, with `--int` support for int-backed enums.
 - `php artisan make:request Name`
-  Creates a Form Request in `app/Http/Requests`.
 - `php artisan make:crud-action Model --operation=create`
-  Creates a CRUD-oriented action for a model workflow.
 - `php artisan make:model Name`
-  Uses the published Laravel stubs, so generated models become `final` when architecture stubs are installed.
 
 ### Composer Scripts
 
