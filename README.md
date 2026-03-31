@@ -57,7 +57,6 @@ The installer can:
 - publish `AGENTS.md` or `CLAUDE.md`
 - publish `.ai/skills/*.md`
 - create `app/Actions` and `app/Dto`
-- publish Laravel model stubs so `make:model` generates `final` classes
 - publish `phpstan.neon`, `rector.php`, `pint.json`, and `tests/Unit/ArchTest.php`
 - publish a host `App\Providers\LaravelExtraServiceProvider`
 - register that provider in `bootstrap/providers.php` when available
@@ -71,9 +70,6 @@ When you enable architecture-related options, the installer prepares the host pr
 
 - `app/Actions`
 - `app/Dto`
-- `stubs/model.stub`
-- `stubs/model.pivot.stub`
-- `stubs/model.morph-pivot.stub`
 - `.ai/architecture.md`
 - `.ai/quality.md`
 - `.ai/skills/actions.md`
@@ -90,7 +86,7 @@ When you enable architecture-related options, the installer prepares the host pr
 - `php artisan make:enum Name`
 - `php artisan make:request Name`
 - `php artisan make:crud-action Model --operation=create`
-- `php artisan make:model Name`
+  Creates a CRUD-oriented action for a model workflow.
 
 ### Composer Scripts
 

@@ -84,7 +84,7 @@ it('writes claude guidelines to a claude file', function () {
     }
 });
 
-it('creates actions, dto folders, and laravel model stubs when architecture is enabled', function () {
+it('creates actions and dto folders when architecture is enabled', function () {
     $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
@@ -112,24 +112,10 @@ it('creates actions, dto folders, and laravel model stubs when architecture is e
             $basePath,
         );
 
-        $modelStub = (string) file_get_contents($basePath.'/stubs/model.stub');
-        $pivotStub = (string) file_get_contents($basePath.'/stubs/model.pivot.stub');
-        $morphPivotStub = (string) file_get_contents($basePath.'/stubs/model.morph-pivot.stub');
-
         expect($result->written)->toContain('app/Actions/.gitkeep')
             ->toContain('app/Dto/.gitkeep')
-            ->toContain('stubs/model.stub')
-            ->toContain('stubs/model.pivot.stub')
-            ->toContain('stubs/model.morph-pivot.stub')
             ->and($basePath.'/app/Actions/.gitkeep')->toBeFile()
-            ->and($basePath.'/app/Dto/.gitkeep')->toBeFile()
-            ->and($basePath.'/stubs/model.stub')->toBeFile()
-            ->and($basePath.'/stubs/model.pivot.stub')->toBeFile()
-            ->and($basePath.'/stubs/model.morph-pivot.stub')->toBeFile()
-            ->and($modelStub)->toContain('declare(strict_types=1);')
-            ->and($modelStub)->toContain('final class {{ class }} extends Model')
-            ->and($pivotStub)->toContain('final class {{ class }} extends Pivot')
-            ->and($morphPivotStub)->toContain('final class {{ class }} extends MorphPivot');
+            ->and($basePath.'/app/Dto/.gitkeep')->toBeFile();
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
