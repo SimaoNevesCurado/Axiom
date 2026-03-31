@@ -1,0 +1,16 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 7
+    paths:
+        - app
+        - bootstrap
+        - config
+        - database
+        - routes
+        - tests
+    tmpDir: build/phpstan
+    checkMissingIterableValueType: true
+    checkModelProperties: true
+    noUnnecessaryCollectionCall: true

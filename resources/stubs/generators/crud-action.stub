@@ -1,0 +1,13 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}final readonly class {{ class }}
+{
+    public function {{ handle_signature }}
+    {
+{{ return_statement }}
+    }
+}

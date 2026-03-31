@@ -1,0 +1,603 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SimaoCurado\LaravelExtra\Actions;
+
+use Illuminate\Filesystem\Filesystem;
+use SimaoCurado\LaravelExtra\Data\InstallResult;
+use SimaoCurado\LaravelExtra\Data\InstallSelections;
+use SimaoCurado\LaravelExtra\Enums\AiGuidelinePreset;
+
+final readonly class InstallLaravelExtraAction
+{
+    public function __construct(private Filesystem $files) {}
+
+    public function handle(InstallSelections $selections, string $basePath): InstallResult
+    {
+        $written = [];
+        $skipped = [];
+
+        if ($selections->installAiSkills) {
+            $this->writeAiSkills(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+        }
+
+        if ($selections->installComposerScripts) {
+            $this->writeComposerScripts(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+        }
+
+        if ($selections->installPhpQualityDependencies) {
+            $this->writeComposerDevDependencies(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+        }
+
+        if ($selections->installFrontendQualityDependencies) {
+            $this->writePackageDevDependencies(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+        }
+
+        if ($selections->aiGuidelines !== AiGuidelinePreset::None) {
+            $this->writeFile(
+                path: $this->aiGuidelinesPath($basePath, $selections->aiGuidelines),
+                content: $this->stub($this->aiGuidelinesStub($selections->aiGuidelines)),
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+        }
+
+        if ($selections->installArchitectureGuidelines) {
+            $this->writeFile(
+                path: $basePath.'/.ai/architecture.md',
+                content: $this->stub('docs/architecture.stub'),
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+
+            $this->writeFile(
+                path: $basePath.'/app/Actions/.gitkeep',
+                content: '',
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+
+            $this->writeFile(
+                path: $basePath.'/app/Dto/.gitkeep',
+                content: '',
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+        }
+
+        if ($selections->installQualityGuidelines) {
+            $this->writeFile(
+                path: $basePath.'/.ai/quality.md',
+                content: $this->stub('docs/quality.stub'),
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+
+            $this->writeFile(
+                path: $basePath.'/phpstan.neon',
+                content: $this->stub('quality/phpstan.neon.stub'),
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+
+            $this->writeFile(
+                path: $basePath.'/rector.php',
+                content: $this->stub('quality/rector.php.stub'),
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+
+            $this->writeFile(
+                path: $basePath.'/pint.json',
+                content: $this->stub('quality/pint.json.stub'),
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+
+            $this->writeFile(
+                path: $basePath.'/tests/Unit/ArchTest.php',
+                content: $this->stub('quality/ArchTest.php.stub'),
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+        }
+
+        if ($selections->installStrictLaravelDefaults) {
+            $this->writeFile(
+                path: $basePath.'/config/laravel-extra.php',
+                content: $this->stub('config/laravel-extra.stub'),
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+
+            $this->writeFile(
+                path: $basePath.'/app/Providers/LaravelExtraServiceProvider.php',
+                content: $this->stub('providers/LaravelExtraServiceProvider.stub'),
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+
+            $this->registerBootstrapProvider(
+                basePath: $basePath,
+                provider: 'App\\Providers\\LaravelExtraServiceProvider::class',
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+        }
+
+        return new InstallResult($written, $skipped);
+    }
+
+    private function aiGuidelinesPath(string $basePath, AiGuidelinePreset $preset): string
+    {
+        return match ($preset) {
+            AiGuidelinePreset::Boost, AiGuidelinePreset::Codex => $basePath.'/AGENTS.md',
+            AiGuidelinePreset::Claude => $basePath.'/CLAUDE.md',
+            AiGuidelinePreset::None => $basePath.'/AGENTS.md',
+        };
+    }
+
+    private function aiGuidelinesStub(AiGuidelinePreset $preset): string
+    {
+        return match ($preset) {
+            AiGuidelinePreset::Boost => 'ai/AGENTS.boost.stub',
+            AiGuidelinePreset::Codex => 'ai/AGENTS.codex.stub',
+            AiGuidelinePreset::Claude => 'ai/CLAUDE.stub',
+            AiGuidelinePreset::None => 'ai/AGENTS.codex.stub',
+        };
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeFile(
+        string $path,
+        string $content,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+        string $basePath,
+    ): void {
+        if ($this->files->exists($path) && ! $overwrite) {
+            $skipped[] = $this->relativePath($path, $basePath);
+
+            return;
+        }
+
+        $directory = dirname($path);
+
+        if (! $this->files->isDirectory($directory)) {
+            $this->files->makeDirectory($directory, 0755, true);
+        }
+
+        $this->files->put($path, $content);
+
+        $written[] = $this->relativePath($path, $basePath);
+    }
+
+    private function stub(string $relativePath): string
+    {
+        return (string) $this->files->get(__DIR__.'/../../resources/stubs/'.$relativePath);
+    }
+
+    private function relativePath(string $path, string $basePath): string
+    {
+        return ltrim(str_replace($basePath, '', $path), '/');
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function registerBootstrapProvider(
+        string $basePath,
+        string $provider,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $providersPath = $basePath.'/bootstrap/providers.php';
+
+        if (! $this->files->exists($providersPath)) {
+            $skipped[] = 'bootstrap/providers.php';
+
+            return;
+        }
+
+        $contents = (string) $this->files->get($providersPath);
+
+        if (str_contains($contents, $provider)) {
+            $skipped[] = 'bootstrap/providers.php';
+
+            return;
+        }
+
+        $needle = '];';
+
+        if (! str_contains($contents, $needle)) {
+            $skipped[] = 'bootstrap/providers.php';
+
+            return;
+        }
+
+        $updated = str_replace($needle, "    {$provider},\n];", $contents);
+
+        if ($updated === $contents && ! $overwrite) {
+            $skipped[] = 'bootstrap/providers.php';
+
+            return;
+        }
+
+        $this->files->put($providersPath, $updated);
+
+        $written[] = 'bootstrap/providers.php';
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeAiSkills(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $skills = [
+            'actions' => 'skills/actions.stub',
+            'dto' => 'skills/dto.stub',
+            'enum' => 'skills/enum.stub',
+            'crud' => 'skills/crud.stub',
+            'quality' => 'skills/quality.stub',
+        ];
+
+        foreach ($skills as $name => $stub) {
+            $this->writeFile(
+                path: $basePath.'/.ai/skills/'.$name.'.md',
+                content: $this->stub($stub),
+                overwrite: $overwrite,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+        }
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeComposerScripts(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $composerPath = $basePath.'/composer.json';
+
+        if (! $this->files->exists($composerPath)) {
+            $skipped[] = 'composer.json';
+
+            return;
+        }
+
+        /** @var array<string, mixed>|null $composer */
+        $composer = json_decode((string) $this->files->get($composerPath), true);
+
+        if (! is_array($composer)) {
+            $skipped[] = 'composer.json';
+
+            return;
+        }
+
+        $composer['scripts'] ??= [];
+
+        if (! is_array($composer['scripts'])) {
+            $skipped[] = 'composer.json';
+
+            return;
+        }
+
+        $scripts = $this->composerScripts($basePath);
+        $hasChanges = false;
+
+        foreach ($scripts as $name => $command) {
+            if (array_key_exists($name, $composer['scripts']) && ! $overwrite) {
+                continue;
+            }
+
+            if (! array_key_exists($name, $composer['scripts']) || $composer['scripts'][$name] !== $command) {
+                $composer['scripts'][$name] = $command;
+                $hasChanges = true;
+            }
+        }
+
+        if (! $hasChanges) {
+            $skipped[] = 'composer.json';
+
+            return;
+        }
+
+        ksort($composer['scripts']);
+
+        $this->files->put(
+            $composerPath,
+            json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
+        );
+
+        $written[] = 'composer.json';
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeComposerDevDependencies(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $composerPath = $basePath.'/composer.json';
+
+        if (! $this->files->exists($composerPath)) {
+            $skipped[] = 'composer.json';
+
+            return;
+        }
+
+        /** @var array<string, mixed>|null $composer */
+        $composer = json_decode((string) $this->files->get($composerPath), true);
+
+        if (! is_array($composer)) {
+            $skipped[] = 'composer.json';
+
+            return;
+        }
+
+        $composer['require-dev'] ??= [];
+
+        if (! is_array($composer['require-dev'])) {
+            $skipped[] = 'composer.json';
+
+            return;
+        }
+
+        $dependencies = [
+            'driftingly/rector-laravel' => '^2.1.12',
+            'larastan/larastan' => '^3.9.3',
+            'laravel/pint' => '^1.29.0',
+            'pestphp/pest-plugin-type-coverage' => '^4.0.3',
+            'phpstan/phpstan' => '^2.1.45',
+            'rector/rector' => '^2.3.6',
+        ];
+
+        $hasChanges = false;
+
+        foreach ($dependencies as $name => $version) {
+            if (array_key_exists($name, $composer['require-dev']) && ! $overwrite) {
+                continue;
+            }
+
+            if (! array_key_exists($name, $composer['require-dev']) || $composer['require-dev'][$name] !== $version) {
+                $composer['require-dev'][$name] = $version;
+                $hasChanges = true;
+            }
+        }
+
+        if (! $hasChanges) {
+            $skipped[] = 'composer.json';
+
+            return;
+        }
+
+        ksort($composer['require-dev']);
+
+        $this->files->put(
+            $composerPath,
+            json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
+        );
+
+        $written[] = 'composer.json';
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writePackageDevDependencies(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $packagePath = $basePath.'/package.json';
+
+        if (! $this->files->exists($packagePath)) {
+            $skipped[] = 'package.json';
+
+            return;
+        }
+
+        /** @var array<string, mixed>|null $package */
+        $package = json_decode((string) $this->files->get($packagePath), true);
+
+        if (! is_array($package)) {
+            $skipped[] = 'package.json';
+
+            return;
+        }
+
+        $package['devDependencies'] ??= [];
+
+        if (! is_array($package['devDependencies'])) {
+            $skipped[] = 'package.json';
+
+            return;
+        }
+
+        $dependencies = [
+            'concurrently' => '^9.2.1',
+            'npm-check-updates' => '^19.3.2',
+            'oxlint' => '^1.48.0',
+            'prettier' => '^3.8.1',
+            'prettier-plugin-organize-imports' => '^4.3.0',
+            'prettier-plugin-tailwindcss' => '^0.7.2',
+        ];
+
+        $hasChanges = false;
+
+        foreach ($dependencies as $name => $version) {
+            if (array_key_exists($name, $package['devDependencies']) && ! $overwrite) {
+                continue;
+            }
+
+            if (! array_key_exists($name, $package['devDependencies']) || $package['devDependencies'][$name] !== $version) {
+                $package['devDependencies'][$name] = $version;
+                $hasChanges = true;
+            }
+        }
+
+        if (! $hasChanges) {
+            $skipped[] = 'package.json';
+
+            return;
+        }
+
+        ksort($package['devDependencies']);
+
+        $this->files->put(
+            $packagePath,
+            json_encode($package, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
+        );
+
+        $written[] = 'package.json';
+    }
+
+    /**
+     * @return array<string, string|list<string>>
+     */
+    private function composerScripts(string $basePath): array
+    {
+        $hasFrontend = $this->files->exists($basePath.'/package.json');
+
+        $setup = [
+            '@php -r "file_exists(\'.env\') || copy(\'.env.example\', \'.env\');"',
+            '@configure:app-url',
+            '@php artisan key:generate',
+            '@php artisan migrate --force',
+        ];
+
+        if ($hasFrontend) {
+            $setup[] = 'bun install';
+            $setup[] = 'bun run build';
+        }
+
+        $dev = [
+            'Composer\\Config::disableProcessTimeout',
+        ];
+
+        $dev[] = $hasFrontend
+            ? 'bunx concurrently -c "#93c5fd,#c4b5fd,#fb7185,#fdba74" "php artisan serve" "php artisan queue:listen --tries=1" "php artisan pail --timeout=0" "bun run dev" --names=server,queue,logs,vite --kill-others'
+            : 'php artisan serve';
+
+        $lint = [
+            'rector',
+            'pint --parallel',
+        ];
+
+        if ($hasFrontend) {
+            $lint[] = 'bun run lint';
+        }
+
+        $testLint = [
+            'pint --parallel --test',
+            'rector --dry-run',
+        ];
+
+        if ($hasFrontend) {
+            $testLint[] = 'bun run test:lint';
+        }
+
+        $testTypes = [
+            'phpstan',
+        ];
+
+        if ($hasFrontend) {
+            $testTypes[] = 'bun run test:types';
+        }
+
+        $updateRequirements = [
+            'composer bump',
+        ];
+
+        if ($hasFrontend) {
+            $updateRequirements[] = 'bunx npm-check-updates -u';
+        }
+
+        return [
+            'configure:app-url' => [
+                '@php -r "if (! file_exists(\'.env\')) { exit(0); } \$environment = file_get_contents(\'.env\'); \$directoryName = basename(getcwd()); \$slug = strtolower((string) preg_replace(\'/[^A-Za-z0-9]+/\', \'-\', \$directoryName)); \$slug = trim(\$slug, \'-\'); if (\$slug === \'\') { exit(0); } \$appUrl = \'http://\' . \$slug . \'.test\'; \$updatedEnvironment = preg_replace(\'/^APP_URL=.*/m\', \'APP_URL=\' . \$appUrl, \$environment, 1, \$replacements); if (\$replacements === 0) { \$updatedEnvironment .= PHP_EOL . \'APP_URL=\' . \$appUrl . PHP_EOL; } file_put_contents(\'.env\', \$updatedEnvironment);"',
+            ],
+            'dev' => $dev,
+            'lint' => $lint,
+            'setup' => $setup,
+            'test' => [
+                '@test:type-coverage',
+                '@test:unit',
+                '@test:lint',
+                '@test:types',
+            ],
+            'test:lint' => $testLint,
+            'test:type-coverage' => 'pest --type-coverage --min=80',
+            'test:types' => $testTypes,
+            'test:unit' => 'pest --parallel',
+            'update:requirements' => $updateRequirements,
+        ];
+    }
+}

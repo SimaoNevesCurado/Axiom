@@ -1,0 +1,54 @@
+<laravel-extra-guidelines>
+=== .ai/actions rules ===
+
+# Actions
+
+- Prefer reusable Action classes in `app/Actions`.
+- Name actions by what they do, with no `Action` suffix required by the call site.
+- Keep a single public `handle()` method per action.
+- Inject dependencies through the constructor using promoted properties.
+- Wrap multi-model writes in transactions.
+
+=== .ai/data rules ===
+
+# DTOs
+
+- Prefer DTOs over loose arrays at application boundaries.
+- Use readonly DTOs when the data should not change after construction.
+- Keep DTOs explicit and fully typed.
+
+=== .ai/quality rules ===
+
+# Quality
+
+- Push errors left with static analysis and strict CI rules.
+- Prefer PHPStan, Rector, Pint, Oxlint, and Oxfmt at strict settings.
+- Keep new code free from debug helpers and silent fallbacks.
+
+=== .ai/php rules ===
+
+# PHP
+
+- Use `declare(strict_types=1);`.
+- Prefer `final` classes by default.
+- Prefer `readonly` objects when mutation is not required.
+- Type every property, parameter, and return value.
+
+=== .ai/laravel rules ===
+
+# Laravel
+
+- Keep controllers thin and move business logic into actions.
+- Prefer explicit requests, DTOs, and focused services over large controllers.
+- Favor eager loading, strict model behavior, and immutable dates where appropriate.
+
+=== .ai/skills rules ===
+
+# Skills
+
+- If available, use `.ai/skills/actions.md` for action workflows.
+- If available, use `.ai/skills/dto.md` for DTO workflows.
+- If available, use `.ai/skills/enum.md` for enum workflows.
+- If available, use `.ai/skills/crud.md` for CRUD workflows.
+- If available, use `.ai/skills/quality.md` for verification and quality workflows.
+</laravel-extra-guidelines>

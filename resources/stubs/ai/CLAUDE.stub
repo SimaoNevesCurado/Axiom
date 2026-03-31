@@ -1,0 +1,11 @@
+# Laravel Extra Claude Guidelines
+
+This project follows Laravel Extra conventions.
+
+- Organize business logic into small reusable actions.
+- Prefer DTOs and readonly data objects instead of loose arrays.
+- Keep classes `final` unless extension is intentional.
+- Use explicit typing everywhere practical.
+- Keep Laravel defaults strict and predictable.
+- Prefer static-analysis-friendly code over clever shortcuts.
+- When present, follow the focused workflow docs in `.ai/skills/`.

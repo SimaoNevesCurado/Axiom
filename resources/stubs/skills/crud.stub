@@ -1,0 +1,18 @@
+# CRUD Skill
+
+Use this skill when building standard CRUD flows.
+
+## Conventions
+
+- Keep controllers thin
+- Use Form Requests for validation
+- Use actions for create, update, delete, and list orchestration
+- Use DTOs to carry structured data into actions
+
+## Preferred Flow
+
+1. Controller receives the request
+2. Form Request validates input
+3. DTO maps validated data
+4. Action performs the operation
+5. Controller returns a resource, redirect, or Inertia response

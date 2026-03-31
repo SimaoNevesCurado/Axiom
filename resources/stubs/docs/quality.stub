@@ -1,0 +1,13 @@
+# Laravel Extra Quality Stack
+
+- PHPStan for strict static analysis
+- Rector for automated refactors
+- Pint for PHP formatting
+- Oxlint and Oxfmt for frontend quality
+- Pest for tests and architecture rules
+
+## Philosophy
+
+- Catch bugs before runtime
+- Prefer explicit code over magical code
+- Keep the baseline strict from the start of the project

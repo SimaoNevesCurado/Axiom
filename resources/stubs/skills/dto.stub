@@ -1,0 +1,17 @@
+# DTO Skill
+
+Use this skill when introducing request, response, or domain transfer objects.
+
+## Conventions
+
+- Place DTOs in `app/Dto`
+- Prefer `final readonly class`
+- Keep DTOs explicit and typed
+- Use DTOs at application boundaries instead of loose arrays
+
+## Preferred Flow
+
+1. Create a DTO for validated input or structured output
+2. Keep constructor arguments typed
+3. Pass DTOs into actions instead of large arrays
+4. Avoid putting business logic into the DTO itself

@@ -1,0 +1,31 @@
+# Laravel Extra AGENTS
+
+This project uses Laravel Extra conventions.
+
+## Architecture
+
+- Prefer `app/Actions` for business operations.
+- Prefer DTOs over associative arrays at boundaries.
+- Keep controllers thin.
+- Use one focused `handle()` method per action.
+
+## Code Style
+
+- Use `declare(strict_types=1);`.
+- Prefer `final` classes.
+- Prefer `readonly` objects and immutable data structures.
+- Add explicit types for properties, parameters, and return values.
+
+## Quality
+
+- Keep PHPStan, Rector, Pint, Oxlint, and Oxfmt strict.
+- Fail fast and avoid runtime surprises when static analysis can catch the issue earlier.
+- Do not leave debug helpers such as `dd`, `dump`, or `ray` in committed code.
+
+## Skills
+
+- Use `.ai/skills/actions.md` for action patterns.
+- Use `.ai/skills/dto.md` for DTO workflows.
+- Use `.ai/skills/enum.md` for enum usage.
+- Use `.ai/skills/crud.md` for CRUD structure.
+- Use `.ai/skills/quality.md` for verification flow.

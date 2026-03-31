@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'architecture' => [
+        'actions_path' => app_path('Actions'),
+        'dto_path' => app_path('Dto'),
+        'prefer_readonly_dtos' => true,
+        'prefer_final_classes' => true,
+    ],
+
+    'quality' => [
+        'prefer_bun' => true,
+        'strict_static_analysis' => true,
+        'fail_fast' => true,
+    ],
+
+    'laravel' => [
+        'prefer_thin_controllers' => true,
+        'prefer_form_requests' => true,
+        'prefer_eager_loading' => true,
+        'prefer_immutable_dates' => true,
+    ],
+];

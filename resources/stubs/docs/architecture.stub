@@ -1,0 +1,19 @@
+# Laravel Extra Architecture
+
+## Actions
+
+- Place business logic in `app/Actions`.
+- Give each action a single public `handle()` method.
+- Keep actions reusable from HTTP, console, jobs, queues, and tests.
+
+## DTOs
+
+- Place DTOs in `app/Dto`.
+- Prefer readonly DTOs.
+- Pass DTOs into actions instead of large untyped arrays.
+
+## Controllers
+
+- Keep controllers small.
+- Validate input with Form Requests.
+- Delegate business logic to actions.

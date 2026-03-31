@@ -1,0 +1,16 @@
+# Enum Skill
+
+Use this skill when replacing string literals or scattered constants with enums.
+
+## Conventions
+
+- Place enums in `app/Enums`
+- Prefer string-backed enums unless integers are clearly better
+- Use clear case names such as `Draft`, `Published`, `Cancelled`
+
+## Preferred Flow
+
+1. Introduce the enum
+2. Replace raw strings in validation, actions, and models
+3. Use enum casts in Eloquent when appropriate
+4. Prefer enum-aware comparisons over string comparisons

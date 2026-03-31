@@ -1,0 +1,18 @@
+# Actions Skill
+
+Use this skill when creating or refactoring business logic into actions.
+
+## Conventions
+
+- Place actions in `app/Actions`
+- Name actions by behavior, such as `CreateInvoice` or `SyncUsers`
+- Keep one public `handle()` method
+- Prefer constructor injection with promoted properties
+- Wrap multi-model writes in a transaction
+
+## Preferred Flow
+
+1. Validate input in a Form Request when the entry point is HTTP
+2. Map validated input into a DTO when useful
+3. Call the action from the controller, job, or command
+4. Return explicit values instead of relying on side effects only
