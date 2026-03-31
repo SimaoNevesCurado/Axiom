@@ -9,6 +9,8 @@
 
 It brings the same direction used in my starter kits into an existing Laravel app: actions, DTOs, enums, stricter quality tooling, AI guidelines, and a more disciplined baseline for code generation and project setup.
 
+Current target support: Laravel 11, 12, and 13.
+
 ## What It Brings
 
 - Action-oriented architecture

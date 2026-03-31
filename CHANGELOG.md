@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-extra` will be documented in this file.
 
+## 0.1.1 - 2026-03-31
+
+- add Laravel 13 support to package constraints
+
 ## 0.1.0 - 2026-03-31
 
 Initial public release.
