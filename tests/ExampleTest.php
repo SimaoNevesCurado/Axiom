@@ -1,6 +1,8 @@
 <?php
 
+use SimaoCurado\LaravelExtra\LaravelExtra;
+
 it('exposes an opinionated package description', function () {
-    expect((new \SimaoCurado\LaravelExtra\LaravelExtra())::class)
-        ->toBe(\SimaoCurado\LaravelExtra\LaravelExtra::class);
+    expect((new LaravelExtra)::class)
+        ->toBe(LaravelExtra::class);
 });

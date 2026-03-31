@@ -6,10 +6,9 @@ namespace SimaoCurado\LaravelExtra\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use InvalidArgumentException;
 use SimaoCurado\LaravelExtra\Support\GeneratesClasses;
 use SimaoCurado\LaravelExtra\Support\GeneratorInput;
-
-use InvalidArgumentException;
 
 final class MakeDtoCommand extends Command
 {

@@ -22,7 +22,7 @@ it('does not overwrite existing files without force', function () {
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem());
+    $action = new InstallLaravelExtraAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -58,7 +58,7 @@ it('writes claude guidelines to a claude file', function () {
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem());
+    $action = new InstallLaravelExtraAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -94,7 +94,7 @@ it('creates actions and data folders when architecture is enabled', function () 
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem());
+    $action = new InstallLaravelExtraAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -138,7 +138,7 @@ it('adds recommended composer scripts to the host project', function () {
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem());
+    $action = new InstallLaravelExtraAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -188,7 +188,7 @@ it('adds backend-only composer scripts when the host project has no frontend pac
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem());
+    $action = new InstallLaravelExtraAction(new Filesystem);
 
     try {
         $action->handle(
@@ -232,7 +232,7 @@ it('publishes ai skills when requested', function () {
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem());
+    $action = new InstallLaravelExtraAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -275,7 +275,7 @@ it('publishes quality preset files and strict provider defaults', function () {
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem());
+    $action = new InstallLaravelExtraAction(new Filesystem);
 
     try {
         $result = $action->handle(
@@ -325,7 +325,7 @@ it('adds php quality dependencies to composer json when requested', function () 
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem());
+    $action = new InstallLaravelExtraAction(new Filesystem);
 
     try {
         $action->handle(
@@ -371,7 +371,7 @@ it('adds frontend quality dependencies to package json when requested', function
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
-    $action = new InstallLaravelExtraAction(new Filesystem());
+    $action = new InstallLaravelExtraAction(new Filesystem);
 
     try {
         $action->handle(

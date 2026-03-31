@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace SimaoCurado\LaravelExtra;
 
-use Spatie\LaravelPackageTools\Package;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
 use SimaoCurado\LaravelExtra\Commands\LaravelExtraCommand;
 use SimaoCurado\LaravelExtra\Commands\MakeActionCommand;
 use SimaoCurado\LaravelExtra\Commands\MakeCrudActionCommand;
 use SimaoCurado\LaravelExtra\Commands\MakeDtoCommand;
 use SimaoCurado\LaravelExtra\Commands\MakeEnumCommand;
 use SimaoCurado\LaravelExtra\Commands\MakeRequestCommand;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class LaravelExtraServiceProvider extends PackageServiceProvider
 {
