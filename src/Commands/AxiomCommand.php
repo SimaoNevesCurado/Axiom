@@ -67,6 +67,7 @@ final class AxiomCommand extends Command
             ),
             installPhpQualityDependencies: $phpTools['legacy_bundle'],
             installFrontendQualityDependencies: $frontendTools['legacy_bundle'],
+            installBunFrontendTooling: $frontendTools['enabled'],
             installPhpStan: $phpTools['phpstan'],
             installRector: $phpTools['rector'],
             installPint: $phpTools['pint'],
@@ -234,13 +235,19 @@ final class AxiomCommand extends Command
     }
 
     /**
-     * @return array{legacy_bundle: bool, oxlint: bool, prettier: bool, concurrently: bool, ncu: bool}
+     * @return array{enabled: bool, legacy_bundle: bool, oxlint: bool, prettier: bool, concurrently: bool, ncu: bool}
      */
     private function resolveFrontendTools(): array
     {
         $legacyBundle = (bool) $this->option('frontend-deps');
+        $enabled = $legacyBundle
+            || (bool) $this->option('oxlint')
+            || (bool) $this->option('prettier')
+            || (bool) $this->option('concurrently')
+            || (bool) $this->option('ncu');
 
         $resolved = [
+            'enabled' => $enabled,
             'legacy_bundle' => $legacyBundle,
             'oxlint' => $legacyBundle || (bool) $this->option('oxlint'),
             'prettier' => $legacyBundle || (bool) $this->option('prettier'),
@@ -253,6 +260,23 @@ final class AxiomCommand extends Command
         }
 
         if ($this->input->isInteractive() && ! $this->hasExplicitFrontendToolSelection()) {
+            $enabled = confirm(
+                label: 'Install Bun frontend tooling?',
+                default: true,
+            );
+
+            $resolved['enabled'] = $enabled;
+
+            if (! $enabled) {
+                $resolved['legacy_bundle'] = false;
+                $resolved['oxlint'] = false;
+                $resolved['prettier'] = false;
+                $resolved['concurrently'] = false;
+                $resolved['ncu'] = false;
+
+                return $resolved;
+            }
+
             /** @var list<string> $selected */
             $selected = multiselect(
                 label: 'Choose frontend tools',

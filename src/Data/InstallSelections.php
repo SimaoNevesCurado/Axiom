@@ -18,6 +18,7 @@ final readonly class InstallSelections
         public bool $installComposerScripts,
         public bool $installPhpQualityDependencies = false,
         public bool $installFrontendQualityDependencies = false,
+        public bool $installBunFrontendTooling = false,
         public bool $installPhpStan = false,
         public bool $installRector = false,
         public bool $installPint = false,
