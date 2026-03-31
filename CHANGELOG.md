@@ -2,6 +2,11 @@
 
 All notable changes to `laravel-extra` will be documented in this file.
 
+## 0.1.2 - 2026-03-31
+
+- improve installer UX with shorter prompts
+- add a clearer install summary and next steps after running the installer
+
 ## 0.1.1 - 2026-03-31
 
 - add Laravel 13 support to package constraints

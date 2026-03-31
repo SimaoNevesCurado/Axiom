@@ -33,50 +33,69 @@ final class LaravelExtraCommand extends Command
             aiGuidelines: $this->resolveAiGuidelines(),
             installAiSkills: $this->resolveToggle(
                 option: 'skills',
-                question: 'Do you want AI skills for Laravel Extra workflows?',
+                question: 'Install AI skills?',
             ),
             installArchitectureGuidelines: $this->resolveToggle(
                 option: 'actions',
-                question: 'Do you want action-oriented architecture guidelines and starter folders?',
+                question: 'Install Actions + Dto folders?',
             ),
             installQualityGuidelines: $this->resolveToggle(
                 option: 'quality',
-                question: 'Do you want quality tooling guidelines for PHPStan, Rector, Pint, and Oxlint?',
+                question: 'Install quality presets?',
             ),
             installStrictLaravelDefaults: $this->resolveToggle(
                 option: 'strict',
-                question: 'Do you want strict Laravel defaults config for this project?',
+                question: 'Install strict Laravel defaults?',
             ),
             installComposerScripts: $this->resolveToggle(
                 option: 'scripts',
-                question: 'Do you want me to add the recommended composer scripts to this project?',
+                question: 'Add composer scripts?',
             ),
             installPhpQualityDependencies: $this->resolveToggle(
                 option: 'php-deps',
-                question: 'Do you want me to add recommended PHP quality dependencies to composer.json?',
+                question: 'Add PHP quality dependencies?',
             ),
             installFrontendQualityDependencies: $this->resolveToggle(
                 option: 'frontend-deps',
-                question: 'Do you want me to add recommended frontend quality dependencies to package.json when available?',
+                question: 'Add frontend quality dependencies?',
             ),
             overwriteFiles: (bool) $this->option('force'),
         );
 
         $result = $installLaravelExtra->handle($selections, base_path());
 
+        $this->newLine();
         $this->components->info('Laravel Extra installer finished.');
 
-        foreach ($result->written as $path) {
-            $this->line("  <fg=green>Wrote</> {$path}");
+        if ($result->written !== []) {
+            $this->line('  Created or updated:');
+
+            foreach ($result->written as $path) {
+                $this->line("  <fg=green>•</> {$path}");
+            }
         }
 
-        foreach ($result->skipped as $path) {
-            $this->line("  <fg=yellow>Skipped</> {$path}");
+        if ($result->skipped !== []) {
+            $this->line('  Skipped:');
+
+            foreach ($result->skipped as $path) {
+                $this->line("  <fg=yellow>•</> {$path}");
+            }
         }
 
         if ($result->written === [] && $result->skipped === []) {
             $this->line('  Nothing to install.');
         }
+
+        $this->newLine();
+        $this->line('  Next steps:');
+        $this->line('  • Run `composer install` to install PHP dependencies.');
+
+        if (file_exists(base_path('package.json'))) {
+            $this->line('  • Run `bun install` to install frontend dependencies.');
+        }
+
+        $this->line('  • Review `AGENTS.md` and `.ai/skills/*` if you installed AI guidance.');
 
         return self::SUCCESS;
     }
@@ -95,7 +114,7 @@ final class LaravelExtraCommand extends Command
 
         /** @var string $selection */
         $selection = select(
-            label: 'Which AI guidelines preset do you want to install?',
+            label: 'Choose an AI preset',
             options: AiGuidelinePreset::labels(),
             default: AiGuidelinePreset::Boost->value,
         );

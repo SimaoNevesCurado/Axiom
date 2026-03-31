@@ -17,10 +17,10 @@ enum AiGuidelinePreset: string
     public static function labels(): array
     {
         return [
-            self::Boost->value => 'Laravel Boost style guidelines',
-            self::Codex->value => 'Codex-friendly AGENTS.md',
-            self::Claude->value => 'Claude-friendly CLAUDE.md',
-            self::None->value => 'Skip AI guidelines for now',
+            self::Boost->value => 'Boost preset',
+            self::Codex->value => 'Codex preset',
+            self::Claude->value => 'Claude preset',
+            self::None->value => 'Skip for now',
         ];
     }
 }
