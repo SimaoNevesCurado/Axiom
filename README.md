@@ -232,7 +232,7 @@ Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed re
 
 ## Credits
 
-- [Simão Curado](https://github.com/simaocurado)
+- [Simão Curado](https://github.com/SimaoNevesCurado)
 
 ## License
 
