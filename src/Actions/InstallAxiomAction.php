@@ -8,6 +8,7 @@ use Illuminate\Filesystem\Filesystem;
 use SimaoCurado\Axiom\Data\InstallResult;
 use SimaoCurado\Axiom\Data\InstallSelections;
 use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Enums\DebugToolPreset;
 
 final readonly class InstallAxiomAction
 {
@@ -548,11 +549,11 @@ final readonly class InstallAxiomAction
             $dependencies['pestphp/pest-plugin-type-coverage'] = '^4.0.3';
         }
 
-        if ($selections->debugTool === \SimaoCurado\Axiom\Enums\DebugToolPreset::Debugbar) {
+        if ($selections->debugTool === DebugToolPreset::Debugbar) {
             $dependencies['barryvdh/laravel-debugbar'] = '^3.0';
         }
 
-        if ($selections->debugTool === \SimaoCurado\Axiom\Enums\DebugToolPreset::Telescope) {
+        if ($selections->debugTool === DebugToolPreset::Telescope) {
             $dependencies['laravel/telescope'] = '^5.0';
         }
 
