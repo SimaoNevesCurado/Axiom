@@ -36,8 +36,9 @@ final readonly class InstallAxiomAction
             );
         }
 
-        if ($selections->installPhpQualityDependencies) {
+        if ($this->composerDevDependencies($selections) !== []) {
             $this->writeComposerDevDependencies(
+                selections: $selections,
                 basePath: $basePath,
                 overwrite: $selections->overwriteFiles,
                 written: $written,
@@ -45,8 +46,9 @@ final readonly class InstallAxiomAction
             );
         }
 
-        if ($selections->installFrontendQualityDependencies) {
+        if ($this->packageDevDependencies($selections) !== []) {
             $this->writePackageDevDependencies(
+                selections: $selections,
                 basePath: $basePath,
                 overwrite: $selections->overwriteFiles,
                 written: $written,
@@ -378,6 +380,7 @@ final readonly class InstallAxiomAction
      * @param  list<string>  &$skipped
      */
     private function writeComposerDevDependencies(
+        InstallSelections $selections,
         string $basePath,
         bool $overwrite,
         array &$written,
@@ -408,14 +411,7 @@ final readonly class InstallAxiomAction
             return;
         }
 
-        $dependencies = [
-            'driftingly/rector-laravel' => '^2.1.12',
-            'larastan/larastan' => '^3.9.3',
-            'laravel/pint' => '^1.29.0',
-            'pestphp/pest-plugin-type-coverage' => '^4.0.3',
-            'phpstan/phpstan' => '^2.1.45',
-            'rector/rector' => '^2.3.6',
-        ];
+        $dependencies = $this->composerDevDependencies($selections);
 
         $hasChanges = false;
 
@@ -451,6 +447,7 @@ final readonly class InstallAxiomAction
      * @param  list<string>  &$skipped
      */
     private function writePackageDevDependencies(
+        InstallSelections $selections,
         string $basePath,
         bool $overwrite,
         array &$written,
@@ -481,14 +478,7 @@ final readonly class InstallAxiomAction
             return;
         }
 
-        $dependencies = [
-            'concurrently' => '^9.2.1',
-            'npm-check-updates' => '^19.3.2',
-            'oxlint' => '^1.48.0',
-            'prettier' => '^3.8.1',
-            'prettier-plugin-organize-imports' => '^4.3.0',
-            'prettier-plugin-tailwindcss' => '^0.7.2',
-        ];
+        $dependencies = $this->packageDevDependencies($selections);
 
         $hasChanges = false;
 
@@ -527,6 +517,79 @@ final readonly class InstallAxiomAction
         if (! in_array($value, $items, true)) {
             $items[] = $value;
         }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function composerDevDependencies(InstallSelections $selections): array
+    {
+        $dependencies = [];
+        $installPhpStan = $selections->installPhpQualityDependencies || $selections->installPhpStan;
+        $installRector = $selections->installPhpQualityDependencies || $selections->installRector;
+        $installPint = $selections->installPhpQualityDependencies || $selections->installPint;
+        $installTypeCoverage = $selections->installPhpQualityDependencies || $selections->installTypeCoverage;
+
+        if ($installPhpStan) {
+            $dependencies['larastan/larastan'] = '^3.9.3';
+            $dependencies['phpstan/phpstan'] = '^2.1.45';
+        }
+
+        if ($installRector) {
+            $dependencies['driftingly/rector-laravel'] = '^2.1.12';
+            $dependencies['rector/rector'] = '^2.3.6';
+        }
+
+        if ($installPint) {
+            $dependencies['laravel/pint'] = '^1.29.0';
+        }
+
+        if ($installTypeCoverage) {
+            $dependencies['pestphp/pest-plugin-type-coverage'] = '^4.0.3';
+        }
+
+        if ($selections->debugTool === \SimaoCurado\Axiom\Enums\DebugToolPreset::Debugbar) {
+            $dependencies['barryvdh/laravel-debugbar'] = '^3.0';
+        }
+
+        if ($selections->debugTool === \SimaoCurado\Axiom\Enums\DebugToolPreset::Telescope) {
+            $dependencies['laravel/telescope'] = '^5.0';
+        }
+
+        ksort($dependencies);
+
+        return $dependencies;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function packageDevDependencies(InstallSelections $selections): array
+    {
+        $dependencies = [];
+        $installFrontendBundle = $selections->installFrontendQualityDependencies;
+
+        if ($installFrontendBundle || $selections->installConcurrently) {
+            $dependencies['concurrently'] = '^9.2.1';
+        }
+
+        if ($installFrontendBundle || $selections->installNpmCheckUpdates) {
+            $dependencies['npm-check-updates'] = '^19.3.2';
+        }
+
+        if ($installFrontendBundle || $selections->installOxlint) {
+            $dependencies['oxlint'] = '^1.48.0';
+        }
+
+        if ($installFrontendBundle || $selections->installPrettier) {
+            $dependencies['prettier'] = '^3.8.1';
+            $dependencies['prettier-plugin-organize-imports'] = '^4.3.0';
+            $dependencies['prettier-plugin-tailwindcss'] = '^0.7.2';
+        }
+
+        ksort($dependencies);
+
+        return $dependencies;
     }
 
     /**

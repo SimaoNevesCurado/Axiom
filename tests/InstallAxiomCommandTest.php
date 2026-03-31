@@ -26,8 +26,15 @@ it('installs the selected presets non-interactively', function () {
             '--quality' => true,
             '--strict' => true,
             '--scripts' => true,
-            '--php-deps' => true,
-            '--frontend-deps' => true,
+            '--phpstan' => true,
+            '--rector' => true,
+            '--pint' => true,
+            '--type-coverage' => true,
+            '--oxlint' => true,
+            '--prettier' => true,
+            '--concurrently' => true,
+            '--ncu' => true,
+            '--debug-tool' => 'debugbar',
             '--force' => true,
             '--no-interaction' => true,
         ])->assertExitCode(0);
@@ -54,7 +61,9 @@ it('installs the selected presets non-interactively', function () {
             ->and($composer['scripts'])->toHaveKey('test:rector')
             ->and($composer['require-dev'])->toHaveKey('larastan/larastan')
             ->and($composer['require-dev'])->toHaveKey('rector/rector')
+            ->and($composer['require-dev'])->toHaveKey('barryvdh/laravel-debugbar')
             ->and($package['devDependencies'])->toHaveKey('oxlint')
+            ->and($package['devDependencies'])->toHaveKey('concurrently')
             ->and($package['devDependencies'])->toHaveKey('prettier');
     } finally {
         app()->setBasePath($originalBasePath);

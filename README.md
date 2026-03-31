@@ -46,8 +46,15 @@ php artisan axiom:install \
   --quality \
   --strict \
   --scripts \
-  --php-deps \
-  --frontend-deps
+  --phpstan \
+  --rector \
+  --pint \
+  --type-coverage \
+  --debug-tool=debugbar \
+  --oxlint \
+  --prettier \
+  --concurrently \
+  --ncu
 ```
 
 ## Installer Options
@@ -61,8 +68,8 @@ The installer can:
 - publish a host `App\Providers\AxiomServiceProvider`
 - register that provider in `bootstrap/providers.php` when available
 - add opinionated `composer` scripts
-- add optional PHP quality `require-dev` dependencies
-- add optional frontend quality `devDependencies` to `package.json`
+- add optional PHP tooling dependencies like PHPStan, Rector, Pint, Pest type coverage, Debugbar, and Telescope
+- add optional frontend tooling dependencies like Oxlint, Prettier, concurrently, and npm-check-updates
 
 ## Generated Structure
 

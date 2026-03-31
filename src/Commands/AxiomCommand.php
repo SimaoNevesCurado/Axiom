@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use SimaoCurado\Axiom\Actions\InstallAxiomAction;
 use SimaoCurado\Axiom\Data\InstallSelections;
 use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Enums\DebugToolPreset;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\select;
@@ -23,6 +24,15 @@ final class AxiomCommand extends Command
         {--scripts : Install opinionated composer scripts into the host project}
         {--php-deps : Add recommended PHP quality dev dependencies to composer.json}
         {--frontend-deps : Add recommended frontend quality dev dependencies to package.json}
+        {--phpstan : Add PHPStan and Larastan to composer.json}
+        {--rector : Add Rector to composer.json}
+        {--pint : Add Laravel Pint to composer.json}
+        {--type-coverage : Add Pest type coverage to composer.json}
+        {--debug-tool= : Debug tool preset (none, debugbar, telescope)}
+        {--oxlint : Add Oxlint to package.json}
+        {--prettier : Add Prettier and plugins to package.json}
+        {--concurrently : Add concurrently to package.json}
+        {--ncu : Add npm-check-updates to package.json}
         {--force : Overwrite existing files}';
 
     protected $description = 'Install opinionated Axiom presets into the host application';
@@ -59,6 +69,39 @@ final class AxiomCommand extends Command
                 option: 'frontend-deps',
                 question: 'Add frontend quality dependencies?',
             ),
+            installPhpStan: $this->resolveToggle(
+                option: 'phpstan',
+                question: 'Add PHPStan?',
+            ),
+            installRector: $this->resolveToggle(
+                option: 'rector',
+                question: 'Add Rector?',
+            ),
+            installPint: $this->resolveToggle(
+                option: 'pint',
+                question: 'Add Pint?',
+            ),
+            installTypeCoverage: $this->resolveToggle(
+                option: 'type-coverage',
+                question: 'Add Pest type coverage?',
+            ),
+            installOxlint: $this->resolveFrontendToggle(
+                option: 'oxlint',
+                question: 'Add Oxlint?',
+            ),
+            installPrettier: $this->resolveFrontendToggle(
+                option: 'prettier',
+                question: 'Add Prettier?',
+            ),
+            installConcurrently: $this->resolveFrontendToggle(
+                option: 'concurrently',
+                question: 'Add concurrently?',
+            ),
+            installNpmCheckUpdates: $this->resolveFrontendToggle(
+                option: 'ncu',
+                question: 'Add npm-check-updates?',
+            ),
+            debugTool: $this->resolveDebugTool(),
             overwriteFiles: (bool) $this->option('force'),
         );
 
@@ -143,5 +186,36 @@ final class AxiomCommand extends Command
             label: $question,
             default: true,
         );
+    }
+
+    private function resolveFrontendToggle(string $option, string $question): bool
+    {
+        if (! file_exists(base_path('package.json'))) {
+            return false;
+        }
+
+        return $this->resolveToggle($option, $question);
+    }
+
+    private function resolveDebugTool(): DebugToolPreset
+    {
+        $option = $this->option('debug-tool');
+
+        if (is_string($option) && $option !== '') {
+            return DebugToolPreset::from($option);
+        }
+
+        if (! $this->input->isInteractive()) {
+            return DebugToolPreset::None;
+        }
+
+        /** @var string $selection */
+        $selection = select(
+            label: 'Choose a debug tool',
+            options: DebugToolPreset::labels(),
+            default: DebugToolPreset::None->value,
+        );
+
+        return DebugToolPreset::from($selection);
     }
 }

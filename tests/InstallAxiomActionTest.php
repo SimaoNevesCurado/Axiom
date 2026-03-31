@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use SimaoCurado\Axiom\Actions\InstallAxiomAction;
 use SimaoCurado\Axiom\Data\InstallSelections;
 use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Enums\DebugToolPreset;
 
 it('does not overwrite existing files without force', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
@@ -368,6 +369,50 @@ it('adds php quality dependencies to composer json when requested', function () 
     }
 });
 
+it('adds only selected php tooling and debugbar when requested', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require-dev' => [],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                installPhpStan: true,
+                installRector: true,
+                debugTool: DebugToolPreset::Debugbar,
+            ),
+            $basePath,
+        );
+
+        /** @var array<string, mixed> $composer */
+        $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
+
+        expect($composer['require-dev'])->toHaveKey('larastan/larastan')
+            ->and($composer['require-dev'])->toHaveKey('phpstan/phpstan')
+            ->and($composer['require-dev'])->toHaveKey('driftingly/rector-laravel')
+            ->and($composer['require-dev'])->toHaveKey('rector/rector')
+            ->and($composer['require-dev'])->toHaveKey('barryvdh/laravel-debugbar')
+            ->and($composer['require-dev'])->not->toHaveKey('laravel/pint')
+            ->and($composer['require-dev'])->not->toHaveKey('laravel/telescope');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 it('adds frontend quality dependencies to package json when requested', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
@@ -409,6 +454,51 @@ it('adds frontend quality dependencies to package json when requested', function
             ->and($package['devDependencies'])->toHaveKey('prettier')
             ->and($package['devDependencies'])->toHaveKey('concurrently')
             ->and($package['devDependencies']['vite'])->toBe('^7.0.0');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('adds only selected frontend tooling when requested', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+        'devDependencies' => [],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                installOxlint: true,
+                installPrettier: true,
+            ),
+            $basePath,
+        );
+
+        /** @var array<string, mixed> $package */
+        $package = json_decode((string) file_get_contents($basePath.'/package.json'), true);
+
+        expect($package['devDependencies'])->toHaveKey('oxlint')
+            ->and($package['devDependencies'])->toHaveKey('prettier')
+            ->and($package['devDependencies'])->toHaveKey('prettier-plugin-organize-imports')
+            ->and($package['devDependencies'])->toHaveKey('prettier-plugin-tailwindcss')
+            ->and($package['devDependencies'])->not->toHaveKey('concurrently')
+            ->and($package['devDependencies'])->not->toHaveKey('npm-check-updates');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
