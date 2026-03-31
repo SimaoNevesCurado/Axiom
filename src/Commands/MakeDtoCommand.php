@@ -58,6 +58,7 @@ final class MakeDtoCommand extends Command
                     '{{ namespace }}' => $className->namespace,
                     '{{ class }}' => $className->name,
                     '{{ constructor }}' => $this->constructor($properties),
+                    '{{ methods }}' => $this->methods($properties),
                 ],
             ),
         );
@@ -87,5 +88,63 @@ final class MakeDtoCommand extends Command
         );
 
         return "    public function __construct(\n".implode(",\n", $arguments)."\n    ) {\n    }";
+    }
+
+    /**
+     * @param  list<array{name: string, type: string}>  $properties
+     */
+    private function methods(array $properties): string
+    {
+        return $this->fromArrayMethod($properties)."\n\n".$this->toArrayMethod($properties);
+    }
+
+    /**
+     * @param  list<array{name: string, type: string}>  $properties
+     */
+    private function fromArrayMethod(array $properties): string
+    {
+        if ($properties === []) {
+            return <<<'PHP'
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self();
+    }
+PHP;
+        }
+
+        $arguments = array_map(
+            static fn (array $property): string => "            {$property['name']}: \$data['{$property['name']}'],",
+            $properties,
+        );
+
+        return "    /**\n     * @param  array<string, mixed>  \$data\n     */\n    public static function fromArray(array \$data): self\n    {\n        return new self(\n".implode("\n", $arguments)."\n        );\n    }";
+    }
+
+    /**
+     * @param  list<array{name: string, type: string}>  $properties
+     */
+    private function toArrayMethod(array $properties): string
+    {
+        if ($properties === []) {
+            return <<<'PHP'
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [];
+    }
+PHP;
+        }
+
+        $lines = array_map(
+            static fn (array $property): string => "            '{$property['name']}' => \$this->{$property['name']},",
+            $properties,
+        );
+
+        return "    /**\n     * @return array<string, mixed>\n     */\n    public function toArray(): array\n    {\n        return [\n".implode("\n", $lines)."\n        ];\n    }";
     }
 }

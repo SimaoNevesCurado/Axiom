@@ -22,7 +22,11 @@ it('creates a readonly dto class in the host project', function () {
             ->and(file_get_contents($path))
             ->toContain('namespace App\\Dto;')
             ->toContain('final readonly class UserDto')
-            ->toContain('public function __construct()');
+            ->toContain('public function __construct()')
+            ->toContain('public static function fromArray(array $data): self')
+            ->toContain('public function toArray(): array')
+            ->toContain('return new self();')
+            ->toContain('return [];');
     } finally {
         app()->setBasePath($originalBasePath);
         deleteDirectoryForMakeDtoCommandTest($basePath);
@@ -48,7 +52,11 @@ it('creates a dto with promoted readonly properties', function () {
 
         expect($contents)
             ->toContain('public string $name')
-            ->toContain('public int $age');
+            ->toContain('public int $age')
+            ->toContain("name: \$data['name']")
+            ->toContain("age: \$data['age']")
+            ->toContain("'name' => \$this->name")
+            ->toContain("'age' => \$this->age");
     } finally {
         app()->setBasePath($originalBasePath);
         deleteDirectoryForMakeDtoCommandTest($basePath);

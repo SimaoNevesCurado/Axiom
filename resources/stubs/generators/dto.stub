@@ -7,4 +7,6 @@ namespace {{ namespace }};
 final readonly class {{ class }}
 {
 {{ constructor }}
+
+{{ methods }}
 }
