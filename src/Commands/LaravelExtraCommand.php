@@ -89,10 +89,17 @@ final class LaravelExtraCommand extends Command
 
         $this->newLine();
         $this->line('  Next steps:');
-        $this->line('  • Run `composer install` to install PHP dependencies.');
 
-        if (file_exists(base_path('package.json'))) {
-            $this->line('  • Run `bun install` to install frontend dependencies.');
+        if (in_array('composer.json', $result->written, true)) {
+            $this->line('  • Run `composer update` to sync new PHP dependencies and update composer.lock.');
+        } else {
+            $this->line('  • Run `composer install` if you still need to install PHP dependencies.');
+        }
+
+        if (in_array('package.json', $result->written, true)) {
+            $this->line('  • Run `bun install` to sync new frontend dependencies.');
+        } elseif (file_exists(base_path('package.json'))) {
+            $this->line('  • Run `bun install` if you still need to install frontend dependencies.');
         }
 
         $this->line('  • Review `AGENTS.md` and `.ai/skills/*` if you installed AI guidance.');

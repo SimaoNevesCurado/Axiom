@@ -204,7 +204,7 @@ final readonly class InstallLaravelExtraAction
         string $basePath,
     ): void {
         if ($this->files->exists($path) && ! $overwrite) {
-            $skipped[] = $this->relativePath($path, $basePath);
+            $this->appendUnique($skipped, $this->relativePath($path, $basePath));
 
             return;
         }
@@ -217,7 +217,7 @@ final readonly class InstallLaravelExtraAction
 
         $this->files->put($path, $content);
 
-        $written[] = $this->relativePath($path, $basePath);
+        $this->appendUnique($written, $this->relativePath($path, $basePath));
     }
 
     private function stub(string $relativePath): string
@@ -244,7 +244,7 @@ final readonly class InstallLaravelExtraAction
         $providersPath = $basePath.'/bootstrap/providers.php';
 
         if (! $this->files->exists($providersPath)) {
-            $skipped[] = 'bootstrap/providers.php';
+            $this->appendUnique($skipped, 'bootstrap/providers.php');
 
             return;
         }
@@ -252,7 +252,7 @@ final readonly class InstallLaravelExtraAction
         $contents = (string) $this->files->get($providersPath);
 
         if (str_contains($contents, $provider)) {
-            $skipped[] = 'bootstrap/providers.php';
+            $this->appendUnique($skipped, 'bootstrap/providers.php');
 
             return;
         }
@@ -260,7 +260,7 @@ final readonly class InstallLaravelExtraAction
         $needle = '];';
 
         if (! str_contains($contents, $needle)) {
-            $skipped[] = 'bootstrap/providers.php';
+            $this->appendUnique($skipped, 'bootstrap/providers.php');
 
             return;
         }
@@ -268,14 +268,14 @@ final readonly class InstallLaravelExtraAction
         $updated = str_replace($needle, "    {$provider},\n];", $contents);
 
         if ($updated === $contents && ! $overwrite) {
-            $skipped[] = 'bootstrap/providers.php';
+            $this->appendUnique($skipped, 'bootstrap/providers.php');
 
             return;
         }
 
         $this->files->put($providersPath, $updated);
 
-        $written[] = 'bootstrap/providers.php';
+        $this->appendUnique($written, 'bootstrap/providers.php');
     }
 
     /**
@@ -321,7 +321,7 @@ final readonly class InstallLaravelExtraAction
         $composerPath = $basePath.'/composer.json';
 
         if (! $this->files->exists($composerPath)) {
-            $skipped[] = 'composer.json';
+            $this->appendUnique($skipped, 'composer.json');
 
             return;
         }
@@ -330,7 +330,7 @@ final readonly class InstallLaravelExtraAction
         $composer = json_decode((string) $this->files->get($composerPath), true);
 
         if (! is_array($composer)) {
-            $skipped[] = 'composer.json';
+            $this->appendUnique($skipped, 'composer.json');
 
             return;
         }
@@ -338,7 +338,7 @@ final readonly class InstallLaravelExtraAction
         $composer['scripts'] ??= [];
 
         if (! is_array($composer['scripts'])) {
-            $skipped[] = 'composer.json';
+            $this->appendUnique($skipped, 'composer.json');
 
             return;
         }
@@ -358,7 +358,7 @@ final readonly class InstallLaravelExtraAction
         }
 
         if (! $hasChanges) {
-            $skipped[] = 'composer.json';
+            $this->appendUnique($skipped, 'composer.json');
 
             return;
         }
@@ -370,7 +370,7 @@ final readonly class InstallLaravelExtraAction
             json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
         );
 
-        $written[] = 'composer.json';
+        $this->appendUnique($written, 'composer.json');
     }
 
     /**
@@ -386,7 +386,7 @@ final readonly class InstallLaravelExtraAction
         $composerPath = $basePath.'/composer.json';
 
         if (! $this->files->exists($composerPath)) {
-            $skipped[] = 'composer.json';
+            $this->appendUnique($skipped, 'composer.json');
 
             return;
         }
@@ -395,7 +395,7 @@ final readonly class InstallLaravelExtraAction
         $composer = json_decode((string) $this->files->get($composerPath), true);
 
         if (! is_array($composer)) {
-            $skipped[] = 'composer.json';
+            $this->appendUnique($skipped, 'composer.json');
 
             return;
         }
@@ -403,7 +403,7 @@ final readonly class InstallLaravelExtraAction
         $composer['require-dev'] ??= [];
 
         if (! is_array($composer['require-dev'])) {
-            $skipped[] = 'composer.json';
+            $this->appendUnique($skipped, 'composer.json');
 
             return;
         }
@@ -431,7 +431,7 @@ final readonly class InstallLaravelExtraAction
         }
 
         if (! $hasChanges) {
-            $skipped[] = 'composer.json';
+            $this->appendUnique($skipped, 'composer.json');
 
             return;
         }
@@ -443,7 +443,7 @@ final readonly class InstallLaravelExtraAction
             json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
         );
 
-        $written[] = 'composer.json';
+        $this->appendUnique($written, 'composer.json');
     }
 
     /**
@@ -459,7 +459,7 @@ final readonly class InstallLaravelExtraAction
         $packagePath = $basePath.'/package.json';
 
         if (! $this->files->exists($packagePath)) {
-            $skipped[] = 'package.json';
+            $this->appendUnique($skipped, 'package.json');
 
             return;
         }
@@ -468,7 +468,7 @@ final readonly class InstallLaravelExtraAction
         $package = json_decode((string) $this->files->get($packagePath), true);
 
         if (! is_array($package)) {
-            $skipped[] = 'package.json';
+            $this->appendUnique($skipped, 'package.json');
 
             return;
         }
@@ -476,7 +476,7 @@ final readonly class InstallLaravelExtraAction
         $package['devDependencies'] ??= [];
 
         if (! is_array($package['devDependencies'])) {
-            $skipped[] = 'package.json';
+            $this->appendUnique($skipped, 'package.json');
 
             return;
         }
@@ -504,7 +504,7 @@ final readonly class InstallLaravelExtraAction
         }
 
         if (! $hasChanges) {
-            $skipped[] = 'package.json';
+            $this->appendUnique($skipped, 'package.json');
 
             return;
         }
@@ -516,7 +516,17 @@ final readonly class InstallLaravelExtraAction
             json_encode($package, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
         );
 
-        $written[] = 'package.json';
+        $this->appendUnique($written, 'package.json');
+    }
+
+    /**
+     * @param  list<string>  &$items
+     */
+    private function appendUnique(array &$items, string $value): void
+    {
+        if (! in_array($value, $items, true)) {
+            $items[] = $value;
+        }
     }
 
     /**

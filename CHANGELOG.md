@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-extra` will be documented in this file.
 
+## 0.1.3 - 2026-03-31
+
+- avoid duplicate file entries in the installer summary
+- show `composer update` instead of `composer install` when composer.json was changed by the installer
+- improve frontend next-step messaging when package.json was changed
+
 ## 0.1.2 - 2026-03-31
 
 - improve installer UX with shorter prompts

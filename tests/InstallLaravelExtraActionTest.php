@@ -160,6 +160,7 @@ it('adds recommended composer scripts to the host project', function () {
         $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
 
         expect($result->written)->toContain('composer.json')
+            ->and(array_values(array_filter($result->written, static fn (string $path): bool => $path === 'composer.json')))->toHaveCount(1)
             ->and($composer['scripts'])->toHaveKey('setup')
             ->and($composer['scripts'])->toHaveKey('dev')
             ->and($composer['scripts'])->toHaveKey('lint')
