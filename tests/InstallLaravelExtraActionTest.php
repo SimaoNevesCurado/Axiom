@@ -84,7 +84,7 @@ it('writes claude guidelines to a claude file', function () {
     }
 });
 
-it('creates actions and data folders when architecture is enabled', function () {
+it('creates actions, dto folders, and laravel model stubs when architecture is enabled', function () {
     $basePath = sys_get_temp_dir().'/laravel-extra-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
@@ -112,10 +112,24 @@ it('creates actions and data folders when architecture is enabled', function () 
             $basePath,
         );
 
+        $modelStub = (string) file_get_contents($basePath.'/stubs/model.stub');
+        $pivotStub = (string) file_get_contents($basePath.'/stubs/model.pivot.stub');
+        $morphPivotStub = (string) file_get_contents($basePath.'/stubs/model.morph-pivot.stub');
+
         expect($result->written)->toContain('app/Actions/.gitkeep')
             ->toContain('app/Dto/.gitkeep')
+            ->toContain('stubs/model.stub')
+            ->toContain('stubs/model.pivot.stub')
+            ->toContain('stubs/model.morph-pivot.stub')
             ->and($basePath.'/app/Actions/.gitkeep')->toBeFile()
-            ->and($basePath.'/app/Dto/.gitkeep')->toBeFile();
+            ->and($basePath.'/app/Dto/.gitkeep')->toBeFile()
+            ->and($basePath.'/stubs/model.stub')->toBeFile()
+            ->and($basePath.'/stubs/model.pivot.stub')->toBeFile()
+            ->and($basePath.'/stubs/model.morph-pivot.stub')->toBeFile()
+            ->and($modelStub)->toContain('declare(strict_types=1);')
+            ->and($modelStub)->toContain('final class {{ class }} extends Model')
+            ->and($pivotStub)->toContain('final class {{ class }} extends Pivot')
+            ->and($morphPivotStub)->toContain('final class {{ class }} extends MorphPivot');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
@@ -295,6 +309,7 @@ it('publishes quality preset files and strict provider defaults', function () {
         );
 
         $providers = (string) file_get_contents($basePath.'/bootstrap/providers.php');
+        $phpstan = (string) file_get_contents($basePath.'/phpstan.neon');
 
         expect($result->written)->toContain('phpstan.neon')
             ->toContain('rector.php')
@@ -307,6 +322,11 @@ it('publishes quality preset files and strict provider defaults', function () {
             ->and($basePath.'/pint.json')->toBeFile()
             ->and($basePath.'/tests/Unit/ArchTest.php')->toBeFile()
             ->and($basePath.'/app/Providers/LaravelExtraServiceProvider.php')->toBeFile()
+            ->and($phpstan)->toContain('vendor/nesbot/carbon/extension.neon')
+            ->and($phpstan)->toContain('phar://phpstan.phar/conf/bleedingEdge.neon')
+            ->and($phpstan)->toContain('- bootstrap/app.php')
+            ->and($phpstan)->toContain('- public')
+            ->and($phpstan)->toContain('tmpDir: /tmp/phpstan')
             ->and($providers)->toContain('App\\Providers\\LaravelExtraServiceProvider::class');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);

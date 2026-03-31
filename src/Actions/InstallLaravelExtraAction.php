@@ -92,6 +92,13 @@ final readonly class InstallLaravelExtraAction
                 skipped: $skipped,
                 basePath: $basePath,
             );
+
+            $this->writeLaravelModelStubs(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
         }
 
         if ($selections->installQualityGuidelines) {
@@ -299,6 +306,34 @@ final readonly class InstallLaravelExtraAction
         foreach ($skills as $name => $stub) {
             $this->writeFile(
                 path: $basePath.'/.ai/skills/'.$name.'.md',
+                content: $this->stub($stub),
+                overwrite: $overwrite,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+        }
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeLaravelModelStubs(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $stubs = [
+            'stubs/model.stub' => 'laravel/model.stub',
+            'stubs/model.pivot.stub' => 'laravel/model.pivot.stub',
+            'stubs/model.morph-pivot.stub' => 'laravel/model.morph-pivot.stub',
+        ];
+
+        foreach ($stubs as $path => $stub) {
+            $this->writeFile(
+                path: $basePath.'/'.$path,
                 content: $this->stub($stub),
                 overwrite: $overwrite,
                 written: $written,

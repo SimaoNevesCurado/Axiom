@@ -12,6 +12,11 @@
 - Prefer readonly DTOs.
 - Pass DTOs into actions instead of large untyped arrays.
 
+## Models
+
+- Published Laravel model stubs generate `final` models by default.
+- Keep Eloquent models focused on persistence concerns.
+
 ## Controllers
 
 - Keep controllers small.

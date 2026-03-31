@@ -2,6 +2,11 @@
 
 All notable changes to `laravel-extra` will be documented in this file.
 
+## 0.1.4 - 2026-03-31
+
+- publish Laravel model stubs so host projects generate `final` models by default
+- align the published `phpstan.neon` stub with the starter kit configuration
+
 ## 0.1.3 - 2026-03-31
 
 - avoid duplicate file entries in the installer summary
