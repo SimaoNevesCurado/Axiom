@@ -177,14 +177,18 @@ it('adds recommended composer scripts to the host project', function () {
             ->and(array_values(array_filter($result->written, static fn (string $path): bool => $path === 'composer.json')))->toHaveCount(1)
             ->and($composer['scripts'])->toHaveKey('setup')
             ->and($composer['scripts'])->toHaveKey('dev')
+            ->and($composer['scripts'])->toHaveKey('fix:rector')
             ->and($composer['scripts'])->toHaveKey('lint')
             ->and($composer['scripts'])->toHaveKey('test')
             ->and($composer['scripts'])->toHaveKey('test:type-coverage')
+            ->and($composer['scripts'])->toHaveKey('test:rector')
             ->and($composer['scripts'])->toHaveKey('test:unit')
             ->and($composer['scripts'])->toHaveKey('test:types')
             ->and($composer['scripts'])->toHaveKey('test:lint')
             ->and($composer['scripts'])->toHaveKey('update:requirements')
+            ->and($composer['scripts']['fix:rector'])->toBe('rector')
             ->and($composer['scripts']['setup'])->toContain('bun install')
+            ->and($composer['scripts']['test:rector'])->toBe('rector --dry-run')
             ->and($composer['scripts']['lint'])->toContain('bun run lint')
             ->and($composer['scripts']['test:types'])->toContain('bun run test:types')
             ->and($composer['scripts']['post-autoload-dump'])->toBe('@php artisan package:discover --ansi');
@@ -225,7 +229,9 @@ it('adds backend-only composer scripts when the host project has no frontend pac
         $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
 
         expect($composer['scripts']['setup'])->not->toContain('bun install')
+            ->and($composer['scripts']['fix:rector'])->toBe('rector')
             ->and($composer['scripts']['lint'])->not->toContain('bun run lint')
+            ->and($composer['scripts']['test:rector'])->toBe('rector --dry-run')
             ->and($composer['scripts']['test:types'])->not->toContain('bun run test:types')
             ->and($composer['scripts']['update:requirements'])->toBe(['composer bump'])
             ->and($composer['scripts']['dev'])->toBe([

@@ -122,6 +122,11 @@ And it can prepare the host project with optional dependencies for:
 - Prettier
 - frontend quality scripts
 
+Published composer scripts include dedicated Rector commands:
+
+- `composer fix:rector`
+- `composer test:rector`
+
 ## Strict Defaults
 
 When strict defaults are enabled, the published host provider configures:
