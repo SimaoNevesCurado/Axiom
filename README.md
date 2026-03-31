@@ -84,86 +84,47 @@ When you enable architecture-related options, the installer prepares the host pr
 
 ## Commands
 
-### Installer Command
+- `php artisan laravel-extra:install`
+  Installs the selected Laravel Extra presets into the host project.
+- `php artisan make:action Name`
+  Creates a single-purpose action in `app/Actions`.
+- `php artisan make:dto Name`
+  Creates a readonly DTO in `app/Dto` with `fromArray()` and `toArray()`.
+- `php artisan make:enum Name`
+  Creates a project enum, with `--int` support for int-backed enums.
+- `php artisan make:request Name`
+  Creates a Form Request in `app/Http/Requests`.
+- `php artisan make:crud-action Model --operation=create`
+  Creates a CRUD-oriented action for a model workflow.
+- `php artisan make:model Name`
+  Uses the published Laravel stubs, so generated models become `final` when architecture stubs are installed.
 
-```bash
-php artisan laravel-extra:install
+### Composer Scripts
 
-php artisan laravel-extra:install --ai=boost
-php artisan laravel-extra:install --ai=codex
-php artisan laravel-extra:install --ai=claude
-php artisan laravel-extra:install --ai=none
-
-php artisan laravel-extra:install --skills
-php artisan laravel-extra:install --actions
-php artisan laravel-extra:install --quality
-php artisan laravel-extra:install --strict
-php artisan laravel-extra:install --scripts
-php artisan laravel-extra:install --php-deps
-php artisan laravel-extra:install --frontend-deps
-php artisan laravel-extra:install --force
-```
-
-### Generator Commands
-
-```bash
-php artisan make:action CreateInvoice
-php artisan make:action Billing/CreateInvoice
-php artisan make:action CreateInvoice --dto=Billing/InvoiceDto
-php artisan make:action CreateInvoice --force
-
-php artisan make:dto CreateInvoiceDto
-php artisan make:dto Billing/InvoiceDto
-php artisan make:dto CreateInvoiceDto --property=total:int
-php artisan make:dto CreateInvoiceDto --property=total:int --property=reference:string
-php artisan make:dto CreateInvoiceDto --force
-
-php artisan make:enum InvoiceStatus
-php artisan make:enum Billing/InvoiceStatus
-php artisan make:enum Priority --int
-php artisan make:enum InvoiceStatus --force
-
-php artisan make:request CreateInvoiceRequest
-php artisan make:request Billing/CreateInvoiceRequest
-php artisan make:request CreateInvoiceRequest --force
-
-php artisan make:crud-action Invoice --operation=create
-php artisan make:crud-action Invoice --operation=create --dto=Invoices/CreateInvoiceDto
-php artisan make:crud-action Invoice --operation=list
-php artisan make:crud-action Invoice --operation=show
-php artisan make:crud-action Invoice --operation=update
-php artisan make:crud-action Invoice --operation=delete
-php artisan make:crud-action Invoice --operation=create --force
-```
-
-When architecture stubs are installed, Laravel's own model generator also follows the package convention:
-
-```bash
-php artisan make:model Invoice
-php artisan make:model Invoice --pivot
-php artisan make:model Taggable --morph-pivot
-```
-
-Those commands are still Laravel commands, but the published stubs make the generated models `final`.
-
-### Published Composer Scripts
-
-When you enable scripts in the installer, the host project gets:
-
-```bash
-composer setup
-composer dev
-composer lint
-composer fix:rector
-composer test
-composer test:type-coverage
-composer test:unit
-composer test:lint
-composer test:rector
-composer test:types
-composer update:requirements
-composer configure:app-url
-```
+- `composer setup`
+  Prepares the project for local development.
+- `composer dev`
+  Starts the local development workflow.
+- `composer lint`
+  Runs auto-fix quality tools like Rector and Pint.
+- `composer fix:rector`
+  Applies Rector refactors.
+- `composer test`
+  Runs the full project quality and test suite.
+- `composer test:type-coverage`
+  Runs Pest type coverage.
+- `composer test:unit`
+  Runs the test suite.
+- `composer test:lint`
+  Runs lint checks without changing files.
+- `composer test:rector`
+  Runs Rector in dry-run mode.
+- `composer test:types`
+  Runs static analysis.
+- `composer update:requirements`
+  Updates project dependency constraints.
+- `composer configure:app-url`
+  Sets the local `APP_URL` based on the project directory name.
 
 ## Quality Presets
 
