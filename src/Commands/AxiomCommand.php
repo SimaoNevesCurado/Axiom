@@ -40,7 +40,12 @@ final class AxiomCommand extends Command
 
     public function handle(InstallAxiomAction $installAxiom): int
     {
-        $phpTools = $this->resolvePhpTools();
+        $installQualityGuidelines = $this->resolveToggle(
+            option: 'quality',
+            question: 'Install quality presets?',
+        );
+
+        $phpTools = $this->resolvePhpTools($installQualityGuidelines);
         $frontendTools = $this->resolveFrontendTools();
 
         $selections = new InstallSelections(
@@ -53,10 +58,7 @@ final class AxiomCommand extends Command
                 option: 'actions',
                 question: 'Install Actions + Dto folders?',
             ),
-            installQualityGuidelines: $this->resolveToggle(
-                option: 'quality',
-                question: 'Install quality presets?',
-            ),
+            installQualityGuidelines: $installQualityGuidelines,
             installStrictLaravelDefaults: $this->resolveToggle(
                 option: 'strict',
                 question: 'Install strict Laravel defaults?',
@@ -197,7 +199,7 @@ final class AxiomCommand extends Command
     /**
      * @return array{legacy_bundle: bool, phpstan: bool, rector: bool, pint: bool, type_coverage: bool}
      */
-    private function resolvePhpTools(): array
+    private function resolvePhpTools(bool $installQualityGuidelines): array
     {
         $legacyBundle = (bool) $this->option('php-deps');
 
@@ -209,7 +211,17 @@ final class AxiomCommand extends Command
             'type_coverage' => $legacyBundle || (bool) $this->option('type-coverage'),
         ];
 
-        if ($this->input->isInteractive() && ! $this->hasExplicitPhpToolSelection()) {
+        if (! $installQualityGuidelines && ! $this->hasExplicitPhpToolSelection()) {
+            return [
+                'legacy_bundle' => false,
+                'phpstan' => false,
+                'rector' => false,
+                'pint' => false,
+                'type_coverage' => false,
+            ];
+        }
+
+        if ($installQualityGuidelines && $this->input->isInteractive() && ! $this->hasExplicitPhpToolSelection()) {
             /** @var list<string> $selected */
             $selected = multiselect(
                 label: 'Choose PHP tools',
