@@ -2,10 +2,35 @@
 
 This project follows Axiom conventions.
 
-- Organize business logic into small reusable actions.
-- Prefer DTOs and readonly data objects instead of loose arrays.
+## App Actions
+
+- Organize business logic into small reusable actions in `app/Actions`.
+- Name actions by what they do and keep a single public `handle()` method.
+- Inject dependencies through constructor promoted properties.
+- Use `php artisan make:action "{name}" --no-interaction` for new actions.
+- Wrap multi-model writes in `DB::transaction()` when needed.
+
+## Architecture
+
+- Prefer DTOs over loose arrays at boundaries.
+- Keep controllers thin and push business logic into actions.
+- Follow the existing project structure and naming conventions.
+- Reuse existing components before adding new ones.
+
+## PHP And Quality
+
+- Use `declare(strict_types=1);`.
 - Keep classes `final` unless extension is intentional.
-- Use explicit typing everywhere practical.
-- Keep Laravel defaults strict and predictable.
+- Prefer `readonly` objects and explicit typing throughout.
+- Use curly braces for control structures.
+- Avoid unnecessary PHPDoc and inline comments.
 - Prefer static-analysis-friendly code over clever shortcuts.
+- Do not leave `dd`, `dump`, or `ray` in committed code.
+
+## Testing
+
+- Add or update tests whenever behavior changes.
+
+## Skills
+
 - When present, follow the focused workflow docs in `.ai/skills/`.

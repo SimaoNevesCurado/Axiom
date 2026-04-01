@@ -7,6 +7,7 @@
 - Name actions by what they do, with no `Action` suffix required by the call site.
 - Keep a single public `handle()` method per action.
 - Inject dependencies through the constructor using promoted properties.
+- Create new actions with `php artisan make:action "{name}" --no-interaction`.
 - Wrap multi-model writes in transactions.
 
 === .ai/data rules ===
@@ -39,8 +40,30 @@
 # Laravel
 
 - Keep controllers thin and move business logic into actions.
-- Prefer explicit requests, DTOs, and focused services over large controllers.
+- Prefer Form Requests and DTOs over inline validation and loose arrays.
+- Prefer Eloquent models and relationships over raw queries.
+- Use named routes and `route()` for URL generation.
+- Use `config()` outside config files, never `env()` directly.
+- In Laravel 12, app setup belongs in `bootstrap/app.php` and app providers live in `bootstrap/providers.php`.
 - Favor eager loading, strict model behavior, and immutable dates where appropriate.
+
+=== .ai/testing rules ===
+
+# Testing
+
+- Every behavior change should be covered by a test or an updated existing test.
+- Prefer Pest for tests and run the minimum relevant suite first.
+- Use `php artisan test --compact` for targeted verification when available.
+- Run `vendor/bin/pint --dirty` before finalizing code changes.
+
+=== .ai/boost rules ===
+
+# Laravel Boost
+
+- Use Laravel Boost tools when they are available.
+- Search Laravel documentation with the Boost docs search tool before changing framework-specific code.
+- Use the Artisan command listing tool to verify command signatures before running unfamiliar commands.
+- Use project-aware Laravel tooling instead of guessing framework behavior.
 
 === .ai/skills rules ===
 
