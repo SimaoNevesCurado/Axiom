@@ -42,6 +42,7 @@ You can also run it non-interactively:
 php artisan axiom:install \
   --ai=boost \
   --skills \
+  --fortify \
   --ssr \
   --actions \
   --quality \
@@ -64,6 +65,7 @@ The installer can:
 
 - publish `AGENTS.md` or `CLAUDE.md`
 - publish `.ai/skills/*.md`
+- ask whether the project should use Fortify and sync `laravel/fortify` in `composer.json`
 - ask whether the project should use SSR and wire that into `composer dev`
 - create `app/Actions` and `app/Dto`
 - publish `phpstan.neon`, `rector.php`, `pint.json`, and `tests/Unit/ArchTest.php`

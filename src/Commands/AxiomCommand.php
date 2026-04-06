@@ -19,6 +19,7 @@ final class AxiomCommand extends Command
     protected $signature = 'axiom:install
         {--ai= : AI guideline preset (boost, codex, claude, none)}
         {--skills : Install Axiom AI skills into .ai/skills}
+        {--fortify : Use Fortify in the project}
         {--ssr : Use SSR in frontend starter kits}
         {--actions : Install action-oriented architecture guidance}
         {--quality : Install quality and tooling guidance}
@@ -55,6 +56,7 @@ final class AxiomCommand extends Command
                 option: 'skills',
                 question: 'Install AI skills?',
             ),
+            installFortify: $this->resolveFortify(),
             installSsr: $this->resolveSsr(),
             installArchitectureGuidelines: $this->resolveToggle(
                 option: 'actions',
@@ -193,6 +195,23 @@ final class AxiomCommand extends Command
         );
     }
 
+    private function resolveFortify(): bool
+    {
+        if ((bool) $this->option('fortify')) {
+            return true;
+        }
+
+        if (! $this->input->isInteractive()) {
+            return false;
+        }
+
+        return confirm(
+            label: 'Use Fortify?',
+            default: $this->hasFortifyInstalled(),
+            hint: 'If enabled, Axiom keeps laravel/fortify in composer.json.',
+        );
+    }
+
     private function hasSsrEntrypoint(): bool
     {
         $paths = [
@@ -209,6 +228,24 @@ final class AxiomCommand extends Command
         }
 
         return false;
+    }
+
+    private function hasFortifyInstalled(): bool
+    {
+        $composerPath = base_path('composer.json');
+
+        if (! file_exists($composerPath)) {
+            return false;
+        }
+
+        /** @var array<string, mixed>|null $composer */
+        $composer = json_decode((string) file_get_contents($composerPath), true);
+
+        if (! is_array($composer)) {
+            return false;
+        }
+
+        return isset($composer['require']['laravel/fortify']);
     }
 
     private function resolveDebugTool(): DebugToolPreset

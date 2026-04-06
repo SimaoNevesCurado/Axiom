@@ -22,6 +22,7 @@ it('installs the selected presets non-interactively', function () {
         $this->artisan('axiom:install', [
             '--ai' => 'boost',
             '--skills' => true,
+            '--fortify' => true,
             '--ssr' => true,
             '--actions' => true,
             '--quality' => true,
@@ -54,6 +55,7 @@ it('installs the selected presets non-interactively', function () {
             ->and($basePath.'/app/Dto/.gitkeep')->toBeFile()
             ->and($basePath.'/config/axiom.php')->toBeFile()
             ->and($basePath.'/app/Providers/AxiomServiceProvider.php')->toBeFile()
+            ->and($composer['require'])->toHaveKey('laravel/fortify')
             ->and($composer['scripts'])->toHaveKey('setup')
             ->and($composer['scripts'])->toHaveKey('dev')
             ->and($composer['scripts'])->toHaveKey('fix:rector')

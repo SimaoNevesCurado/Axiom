@@ -30,6 +30,7 @@ it('does not overwrite existing files without force', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::Boost,
                 installAiSkills: false,
+                installFortify: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -67,6 +68,7 @@ it('writes claude guidelines to a claude file', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::Claude,
                 installAiSkills: false,
+                installFortify: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -104,6 +106,7 @@ it('creates actions and dto folders when architecture is enabled', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installFortify: false,
                 installSsr: false,
                 installArchitectureGuidelines: true,
                 installQualityGuidelines: false,
@@ -149,6 +152,7 @@ it('adds recommended composer scripts to the host project', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installFortify: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -205,6 +209,7 @@ it('adds backend-only composer scripts when the host project has no frontend pac
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installFortify: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -252,6 +257,7 @@ it('publishes ai skills when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: true,
+                installFortify: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -296,6 +302,7 @@ it('publishes quality preset files and strict provider defaults', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installFortify: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: true,
@@ -353,6 +360,7 @@ it('adds php quality dependencies to composer json when requested', function () 
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installFortify: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -395,6 +403,7 @@ it('adds only selected php tooling and debugbar when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installFortify: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -445,6 +454,7 @@ it('adds frontend quality dependencies to package json when requested', function
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installFortify: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -490,6 +500,7 @@ it('adds only selected frontend tooling when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installFortify: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -535,6 +546,7 @@ it('adds the SSR process to the dev script when SSR is enabled', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installFortify: false,
                 installSsr: true,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -552,6 +564,90 @@ it('adds the SSR process to the dev script when SSR is enabled', function () {
 
         expect($composer['scripts']['dev'][1])->toContain('php artisan inertia:start-ssr')
             ->and($composer['scripts']['dev'][1])->toContain('--names=server,queue,logs,vite,ssr');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('adds fortify to composer require when enabled', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                installFortify: true,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        /** @var array<string, mixed> $composer */
+        $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
+
+        expect($composer['require'])->toHaveKey('laravel/fortify')
+            ->and($composer['require']['laravel/fortify'])->toBe('^1.36.1');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('removes fortify from composer require and bootstrap providers when disabled', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+            'laravel/fortify' => '^1.36.1',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n    App\\Providers\\FortifyServiceProvider::class,\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                installFortify: false,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        /** @var array<string, mixed> $composer */
+        $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
+        $providers = (string) file_get_contents($basePath.'/bootstrap/providers.php');
+
+        expect($composer['require'])->not->toHaveKey('laravel/fortify')
+            ->and($providers)->not->toContain('App\\Providers\\FortifyServiceProvider::class');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }

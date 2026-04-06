@@ -5,6 +5,7 @@ All notable changes to `axiom` will be documented in this file.
 ## 0.2.8 - 2026-04-06
 
 - always show the `Use Server Side Rendering?` prompt in interactive installs
+- add a `Use Fortify?` installer prompt that syncs `laravel/fortify` in `composer.json`
 
 ## 0.2.7 - 2026-04-06
 

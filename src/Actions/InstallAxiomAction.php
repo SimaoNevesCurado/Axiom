@@ -38,6 +38,14 @@ final readonly class InstallAxiomAction
             );
         }
 
+        $this->syncComposerDependencies(
+            selections: $selections,
+            basePath: $basePath,
+            overwrite: $selections->overwriteFiles,
+            written: $written,
+            skipped: $skipped,
+        );
+
         if ($this->composerDevDependencies($selections) !== []) {
             $this->writeComposerDevDependencies(
                 selections: $selections,
@@ -173,6 +181,14 @@ final readonly class InstallAxiomAction
             );
         }
 
+        if (! $selections->installFortify) {
+            $this->unregisterBootstrapProvider(
+                basePath: $basePath,
+                provider: 'App\\Providers\\FortifyServiceProvider::class',
+                written: $written,
+            );
+        }
+
         return new InstallResult($written, $skipped);
     }
 
@@ -274,6 +290,32 @@ final readonly class InstallAxiomAction
         if ($updated === $contents && ! $overwrite) {
             $this->appendUnique($skipped, 'bootstrap/providers.php');
 
+            return;
+        }
+
+        $this->files->put($providersPath, $updated);
+
+        $this->appendUnique($written, 'bootstrap/providers.php');
+    }
+
+    /**
+     * @param  list<string>  &$written
+     */
+    private function unregisterBootstrapProvider(
+        string $basePath,
+        string $provider,
+        array &$written,
+    ): void {
+        $providersPath = $basePath.'/bootstrap/providers.php';
+
+        if (! $this->files->exists($providersPath)) {
+            return;
+        }
+
+        $contents = (string) $this->files->get($providersPath);
+        $updated = str_replace("    {$provider},\n", '', $contents);
+
+        if ($updated === $contents) {
             return;
         }
 
@@ -436,6 +478,71 @@ final readonly class InstallAxiomAction
         }
 
         ksort($composer['require-dev']);
+
+        $this->files->put(
+            $composerPath,
+            json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
+        );
+
+        $this->appendUnique($written, 'composer.json');
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function syncComposerDependencies(
+        InstallSelections $selections,
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $composerPath = $basePath.'/composer.json';
+
+        if (! $this->files->exists($composerPath)) {
+            return;
+        }
+
+        /** @var array<string, mixed>|null $composer */
+        $composer = json_decode((string) $this->files->get($composerPath), true);
+
+        if (! is_array($composer)) {
+            $this->appendUnique($skipped, 'composer.json');
+
+            return;
+        }
+
+        $composer['require'] ??= [];
+
+        if (! is_array($composer['require'])) {
+            $this->appendUnique($skipped, 'composer.json');
+
+            return;
+        }
+
+        $hasChanges = false;
+        $fortifyPackage = 'laravel/fortify';
+
+        if ($selections->installFortify) {
+            if (! array_key_exists($fortifyPackage, $composer['require']) || $overwrite) {
+                if (($composer['require'][$fortifyPackage] ?? null) !== '^1.36.1') {
+                    $composer['require'][$fortifyPackage] = '^1.36.1';
+                    $hasChanges = true;
+                }
+            }
+        } elseif (array_key_exists($fortifyPackage, $composer['require'])) {
+            unset($composer['require'][$fortifyPackage]);
+            $hasChanges = true;
+        } else {
+            return;
+        }
+
+        if (! $hasChanges) {
+            return;
+        }
+
+        ksort($composer['require']);
 
         $this->files->put(
             $composerPath,
