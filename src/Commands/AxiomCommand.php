@@ -178,10 +178,6 @@ final class AxiomCommand extends Command
 
     private function resolveSsr(): bool
     {
-        if (! file_exists(base_path('package.json'))) {
-            return false;
-        }
-
         if ((bool) $this->option('ssr')) {
             return true;
         }

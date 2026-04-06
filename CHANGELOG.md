@@ -2,6 +2,10 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.2.8 - 2026-04-06
+
+- always show the `Use Server Side Rendering?` prompt in interactive installs
+
 ## 0.2.7 - 2026-04-06
 
 - add a `Use Server Side Rendering?` installer prompt for frontend starter kits
