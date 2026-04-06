@@ -19,6 +19,7 @@ final class AxiomCommand extends Command
     protected $signature = 'axiom:install
         {--ai= : AI guideline preset (boost, codex, claude, none)}
         {--skills : Install Axiom AI skills into .ai/skills}
+        {--ssr : Use SSR in frontend starter kits}
         {--actions : Install action-oriented architecture guidance}
         {--quality : Install quality and tooling guidance}
         {--strict : Install strict Laravel defaults config}
@@ -54,6 +55,7 @@ final class AxiomCommand extends Command
                 option: 'skills',
                 question: 'Install AI skills?',
             ),
+            installSsr: $this->resolveSsr(),
             installArchitectureGuidelines: $this->resolveToggle(
                 option: 'actions',
                 question: 'Install Actions + Dto folders?',
@@ -172,6 +174,45 @@ final class AxiomCommand extends Command
         }
 
         return $this->resolveToggle($option, $question);
+    }
+
+    private function resolveSsr(): bool
+    {
+        if (! file_exists(base_path('package.json'))) {
+            return false;
+        }
+
+        if ((bool) $this->option('ssr')) {
+            return true;
+        }
+
+        if (! $this->input->isInteractive()) {
+            return false;
+        }
+
+        return confirm(
+            label: 'Use Server Side Rendering?',
+            default: $this->hasSsrEntrypoint(),
+            hint: 'If enabled, Axiom keeps SSR wired into the project dev workflow.',
+        );
+    }
+
+    private function hasSsrEntrypoint(): bool
+    {
+        $paths = [
+            'resources/js/ssr.js',
+            'resources/js/ssr.jsx',
+            'resources/js/ssr.ts',
+            'resources/js/ssr.tsx',
+        ];
+
+        foreach ($paths as $path) {
+            if (file_exists(base_path($path))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function resolveDebugTool(): DebugToolPreset

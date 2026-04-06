@@ -30,6 +30,7 @@ final readonly class InstallAxiomAction
 
         if ($selections->installComposerScripts) {
             $this->writeComposerScripts(
+                selections: $selections,
                 basePath: $basePath,
                 overwrite: $selections->overwriteFiles,
                 written: $written,
@@ -316,6 +317,7 @@ final readonly class InstallAxiomAction
      * @param  list<string>  &$skipped
      */
     private function writeComposerScripts(
+        InstallSelections $selections,
         string $basePath,
         bool $overwrite,
         array &$written,
@@ -346,7 +348,7 @@ final readonly class InstallAxiomAction
             return;
         }
 
-        $scripts = $this->composerScripts($basePath);
+        $scripts = $this->composerScripts($selections, $basePath);
         $hasChanges = false;
 
         foreach ($scripts as $name => $command) {
@@ -596,9 +598,10 @@ final readonly class InstallAxiomAction
     /**
      * @return array<string, string|list<string>>
      */
-    private function composerScripts(string $basePath): array
+    private function composerScripts(InstallSelections $selections, string $basePath): array
     {
         $hasFrontend = $this->files->exists($basePath.'/package.json');
+        $useSsr = $hasFrontend && $selections->installSsr;
 
         $setup = [
             '@php -r "file_exists(\'.env\') || copy(\'.env.example\', \'.env\');"',
@@ -617,7 +620,9 @@ final readonly class InstallAxiomAction
         ];
 
         $dev[] = $hasFrontend
-            ? 'bunx concurrently -c "#93c5fd,#c4b5fd,#fb7185,#fdba74" "php artisan serve" "php artisan queue:listen --tries=1" "php artisan pail --timeout=0" "bun run dev" --names=server,queue,logs,vite --kill-others'
+            ? ($useSsr
+                ? 'bunx concurrently -c "#93c5fd,#c4b5fd,#fb7185,#fdba74,#86efac" "php artisan serve" "php artisan queue:listen --tries=1" "php artisan pail --timeout=0" "bun run dev" "php artisan inertia:start-ssr" --names=server,queue,logs,vite,ssr --kill-others'
+                : 'bunx concurrently -c "#93c5fd,#c4b5fd,#fb7185,#fdba74" "php artisan serve" "php artisan queue:listen --tries=1" "php artisan pail --timeout=0" "bun run dev" --names=server,queue,logs,vite --kill-others')
             : 'php artisan serve';
 
         $lint = [

@@ -30,6 +30,7 @@ it('does not overwrite existing files without force', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::Boost,
                 installAiSkills: false,
+                installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
@@ -66,6 +67,7 @@ it('writes claude guidelines to a claude file', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::Claude,
                 installAiSkills: false,
+                installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
@@ -102,6 +104,7 @@ it('creates actions and dto folders when architecture is enabled', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installSsr: false,
                 installArchitectureGuidelines: true,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
@@ -146,6 +149,7 @@ it('adds recommended composer scripts to the host project', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
@@ -201,6 +205,7 @@ it('adds backend-only composer scripts when the host project has no frontend pac
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
@@ -247,6 +252,7 @@ it('publishes ai skills when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: true,
+                installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
@@ -290,6 +296,7 @@ it('publishes quality preset files and strict provider defaults', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: true,
                 installStrictLaravelDefaults: true,
@@ -346,6 +353,7 @@ it('adds php quality dependencies to composer json when requested', function () 
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
@@ -387,6 +395,7 @@ it('adds only selected php tooling and debugbar when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
@@ -436,6 +445,7 @@ it('adds frontend quality dependencies to package json when requested', function
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
@@ -480,6 +490,7 @@ it('adds only selected frontend tooling when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
+                installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
@@ -499,6 +510,48 @@ it('adds only selected frontend tooling when requested', function () {
             ->and($package['devDependencies'])->toHaveKey('prettier-plugin-tailwindcss')
             ->and($package['devDependencies'])->not->toHaveKey('concurrently')
             ->and($package['devDependencies'])->not->toHaveKey('npm-check-updates');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('adds the SSR process to the dev script when SSR is enabled', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                installSsr: true,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: true,
+                installPhpQualityDependencies: false,
+                installFrontendQualityDependencies: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        /** @var array<string, mixed> $composer */
+        $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
+
+        expect($composer['scripts']['dev'][1])->toContain('php artisan inertia:start-ssr')
+            ->and($composer['scripts']['dev'][1])->toContain('--names=server,queue,logs,vite,ssr');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }

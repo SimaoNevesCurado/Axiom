@@ -22,6 +22,7 @@ it('installs the selected presets non-interactively', function () {
         $this->artisan('axiom:install', [
             '--ai' => 'boost',
             '--skills' => true,
+            '--ssr' => true,
             '--actions' => true,
             '--quality' => true,
             '--strict' => true,
@@ -58,6 +59,7 @@ it('installs the selected presets non-interactively', function () {
             ->and($composer['scripts'])->toHaveKey('fix:rector')
             ->and($composer['scripts'])->toHaveKey('lint')
             ->and($composer['scripts'])->toHaveKey('test')
+            ->and($composer['scripts']['dev'][1])->toContain('php artisan inertia:start-ssr')
             ->and($composer['scripts'])->toHaveKey('test:rector')
             ->and($composer['require-dev'])->toHaveKey('larastan/larastan')
             ->and($composer['require-dev'])->toHaveKey('rector/rector')

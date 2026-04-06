@@ -12,6 +12,7 @@ final readonly class InstallSelections
     public function __construct(
         public AiGuidelinePreset $aiGuidelines,
         public bool $installAiSkills,
+        public bool $installSsr,
         public bool $installArchitectureGuidelines,
         public bool $installQualityGuidelines,
         public bool $installStrictLaravelDefaults,

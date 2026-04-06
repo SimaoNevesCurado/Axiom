@@ -2,6 +2,11 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.2.7 - 2026-04-06
+
+- add a `Use Server Side Rendering?` installer prompt for frontend starter kits
+- allow `axiom:install --ssr` to add or keep the SSR process in the generated `composer dev` script
+
 ## 0.1.4 - 2026-03-31
 
 - publish Laravel model stubs so host projects generate `final` models by default

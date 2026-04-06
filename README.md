@@ -42,6 +42,7 @@ You can also run it non-interactively:
 php artisan axiom:install \
   --ai=boost \
   --skills \
+  --ssr \
   --actions \
   --quality \
   --strict \
@@ -63,6 +64,7 @@ The installer can:
 
 - publish `AGENTS.md` or `CLAUDE.md`
 - publish `.ai/skills/*.md`
+- ask whether the project should use SSR and wire that into `composer dev`
 - create `app/Actions` and `app/Dto`
 - publish `phpstan.neon`, `rector.php`, `pint.json`, and `tests/Unit/ArchTest.php`
 - publish a host `App\Providers\AxiomServiceProvider`
