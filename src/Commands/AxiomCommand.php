@@ -46,6 +46,8 @@ final class AxiomCommand extends Command
 
     public function handle(InstallAxiomAction $installAxiom, DetectFrontendStackAction $detectFrontendStack): int
     {
+        $this->renderInstallBanner();
+
         $frontendStack = $detectFrontendStack->handle(base_path())->stack;
         $hasFortifyInstalled = $this->hasFortifyInstalled();
 
@@ -142,6 +144,38 @@ final class AxiomCommand extends Command
         $this->line('  • Review `AGENTS.md` and `.ai/skills/*` if you installed AI guidance.');
 
         return self::SUCCESS;
+    }
+
+    private function renderInstallBanner(): void
+    {
+        if (! $this->output->isDecorated()) {
+            $this->line('AXIOM');
+            $this->newLine();
+
+            return;
+        }
+
+        $pink = "\033[38;2;231;132;255m";
+        $violet = "\033[38;2;191;124;255m";
+        $cyan = "\033[38;2;72;199;255m";
+        $reset = "\033[0m";
+
+        $lines = [
+            ' █████╗ ██╗  ██╗██╗ ██████╗ ███╗   ███╗',
+            '██╔══██╗╚██╗██╔╝██║██╔═══██╗████╗ ████║',
+            '███████║ ╚███╔╝ ██║██║   ██║██╔████╔██║',
+            '██╔══██║ ██╔██╗ ██║██║   ██║██║╚██╔╝██║',
+            '██║  ██║██╔╝ ██╗██║╚██████╔╝██║ ╚═╝ ██║',
+            '╚═╝  ╚═╝╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝     ╚═╝',
+        ];
+
+        foreach ($lines as $line) {
+            $this->line($violet.$line.$reset);
+            $this->line(' '.$cyan.$line.$reset);
+        }
+
+        $this->line($pink.'Axiom Installer'.$reset);
+        $this->newLine();
     }
 
     private function shouldSkipComposerUpdate(): bool
