@@ -155,37 +155,45 @@ final class AxiomCommand extends Command
             return;
         }
 
-        $r1 = "\033[38;2;255;140;0m";
-        $r2 = "\033[38;2;255;120;20m";
-        $r3 = "\033[38;2;255;100;40m";
-        $r4 = "\033[38;2;255;80;60m";
-        $r5 = "\033[38;2;240;60;90m";
-        $p1 = "\033[38;2;220;40;130m";
-        $p2 = "\033[38;2;200;20;170m";
-        $p3 = "\033[38;2;170;0;200m";
-        $p4 = "\033[38;2;160;0;210m";
-        $p5 = "\033[38;2;150;0;220m";
-        $p6 = "\033[38;2;140;0;230m";
-        $p7 = "\033[38;2;130;0;240m";
-        $p8 = "\033[38;2;120;0;255m";
-        $reset = "\033[0m";
+        $this->newLine();
+
+        $lines = [
+            ' █████╗ ██╗  ██╗██╗ ██████╗ ███╗   ███╗',
+            '██╔══██╗╚██╗██╔╝██║██╔═══██╗████╗ ████║',
+            '███████║ ╚███╔╝ ██║██║   ██║██╔████╔██║',
+            '██╔══██║ ██╔██╗ ██║██║   ██║██║╚██╔╝██║',
+            '██║  ██║██╔╝ ██╗██║╚██████╔╝██║ ╚═╝ ██║',
+            '╚═╝  ╚═╝╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝     ╚═╝',
+        ];
+
+        foreach ($lines as $line) {
+            $this->line($this->gradient($line));
+        }
 
         $this->newLine();
-        $this->line($r1.' █████╗'.$r2.' ██╗  '.$r3.' ██╗'.$r4.'██╗'.$r5.' ██████╗ '.$reset);
-        $this->line($r1.'██╔══██╗'.$r2.'╚██╗ '.$r3.'██╔╝'.$r5.'██║██╔═══██╗'.$reset);
-        $this->line($r2.'███████║'.$r3.' ╚███╔╝ '.$p1.'██║██║   ██║'.$reset);
-        $this->line($r3.'██╔══██║'.$p1.' ██╔██╗ '.$p2.'██║██║   ██║'.$reset);
-        $this->line($r4.' ██║  ██║'.$p2.'██╔╝ ██╗'.$p3.'██║╚██████╔╝'.$reset);
-        $this->line($r5.' ╚═╝  ╚═╝'.$p3.'╚═╝  ╚═╝'.$p6.'╚═╝ ╚═════╝ '.$reset);
-        $this->line($p3.' ███╗   ███╗'.$reset);
-        $this->line($p4.'████╗ ████║'.$reset);
-        $this->line($p5.'██╔████╔██║'.$reset);
-        $this->line($p6.'██║╚██╔╝██║'.$reset);
-        $this->line($p7.'██║ ╚═╝ ██║'.$reset);
-        $this->line($p8.'╚═╝     ╚═╝'.$reset);
+        $this->line($this->gradient('Axiom Installer'));
         $this->newLine();
-        $this->line($p3.'Axiom Installer'.$reset);
-        $this->newLine();
+    }
+
+    private function gradient(string $text): string
+    {
+        $start = [255, 140, 0];
+        $end = [140, 0, 255];
+
+        $length = strlen($text);
+        $result = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $ratio = $length > 1 ? $i / ($length - 1) : 0.0;
+
+            $r = (int) ($start[0] + ($end[0] - $start[0]) * $ratio);
+            $g = (int) ($start[1] + ($end[1] - $start[1]) * $ratio);
+            $b = (int) ($start[2] + ($end[2] - $start[2]) * $ratio);
+
+            $result .= "\033[38;2;{$r};{$g};{$b}m{$text[$i]}";
+        }
+
+        return $result."\033[0m";
     }
 
     private function shouldSkipComposerUpdate(): bool
