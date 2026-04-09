@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Log in</title>
+</head>
+<body>
+    <h1>Log in</h1>
+
+    @if (! empty($status))
+        <p>{{ $status }}</p>
+    @endif
+
+    <form method="post" action="{{ route('login.store') }}">
+        @csrf
+
+        <label>
+            Email
+            <input type="email" name="email" value="{{ old('email') }}" required>
+        </label>
+
+        <label>
+            Password
+            <input type="password" name="password" required>
+        </label>
+
+        <label>
+            <input type="checkbox" name="remember" value="1">
+            Remember me
+        </label>
+
+        <button type="submit">Log in</button>
+    </form>
+
+    @if ($canResetPassword)
+        <a href="{{ route('password.request') }}">Forgot password?</a>
+    @endif
+
+    @if ($canRegister)
+        <a href="{{ route('register') }}">Create an account</a>
+    @endif
+</body>
+</html>

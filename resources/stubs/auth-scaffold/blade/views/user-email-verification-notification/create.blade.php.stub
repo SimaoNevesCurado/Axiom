@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Email verification</title>
+</head>
+<body>
+    <h1>Verify email</h1>
+    <p>Please verify your email address.</p>
+
+    @if (($status ?? null) === 'verification-link-sent')
+        <p>A new verification link has been sent.</p>
+    @endif
+
+    <form method="post" action="{{ route('verification.send') }}">
+        @csrf
+        <button type="submit">Resend verification email</button>
+    </form>
+
+    <form method="post" action="{{ route('logout') }}">
+        @csrf
+        <button type="submit">Log out</button>
+    </form>
+</body>
+</html>

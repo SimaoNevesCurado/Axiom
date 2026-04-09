@@ -7,7 +7,9 @@ use Illuminate\Support\Str;
 use SimaoCurado\Axiom\Actions\InstallAxiomAction;
 use SimaoCurado\Axiom\Data\InstallSelections;
 use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Enums\AuthScaffoldPreset;
 use SimaoCurado\Axiom\Enums\DebugToolPreset;
+use SimaoCurado\Axiom\Enums\FrontendStack;
 
 it('does not overwrite existing files without force', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
@@ -30,7 +32,7 @@ it('does not overwrite existing files without force', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::Boost,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -68,7 +70,7 @@ it('writes claude guidelines to a claude file', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::Claude,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -106,7 +108,7 @@ it('creates actions and dto folders when architecture is enabled', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: true,
                 installQualityGuidelines: false,
@@ -152,7 +154,7 @@ it('adds recommended composer scripts to the host project', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -209,7 +211,7 @@ it('adds backend-only composer scripts when the host project has no frontend pac
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -257,7 +259,7 @@ it('publishes ai skills when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: true,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -302,7 +304,7 @@ it('publishes quality preset files and strict provider defaults', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: true,
@@ -360,7 +362,7 @@ it('adds php quality dependencies to composer json when requested', function () 
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -403,7 +405,7 @@ it('adds only selected php tooling and debugbar when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -454,7 +456,7 @@ it('adds frontend quality dependencies to package json when requested', function
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -500,7 +502,7 @@ it('adds only selected frontend tooling when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -546,7 +548,7 @@ it('adds the SSR process to the dev script when SSR is enabled', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::AppManaged,
                 installSsr: true,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -569,16 +571,15 @@ it('adds the SSR process to the dev script when SSR is enabled', function () {
     }
 });
 
-it('adds fortify to composer require when enabled', function () {
+it('writes auth routes to a dedicated file and includes it from web routes', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/composer.json', json_encode([
         'name' => 'acme/demo',
-        'require' => [
-            'laravel/framework' => '^12.0',
-        ],
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::view('/', 'welcome');\n");
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
@@ -589,40 +590,49 @@ it('adds fortify to composer require when enabled', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: true,
+                authScaffold: AuthScaffoldPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
                 installComposerScripts: false,
                 overwriteFiles: false,
+                frontendStack: FrontendStack::InertiaVue,
             ),
             $basePath,
         );
 
-        /** @var array<string, mixed> $composer */
-        $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
+        $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
+        $authRoutes = (string) file_get_contents($basePath.'/routes/auth.php');
+        $sessionController = (string) file_get_contents($basePath.'/app/Http/Controllers/SessionController.php');
+        $validEmailRule = (string) file_get_contents($basePath.'/app/Rules/ValidEmail.php');
 
-        expect($composer['require'])->toHaveKey('laravel/fortify')
-            ->and($composer['require']['laravel/fortify'])->toBe('^1.36.1');
+        expect($basePath.'/routes/auth.php')->toBeFile()
+            ->and($basePath.'/app/Rules/ValidEmail.php')->toBeFile()
+            ->and($webRoutes)->toContain("require __DIR__.'/auth.php';")
+            ->and($authRoutes)->toContain("->name('login')")
+            ->and($authRoutes)->toContain("->name('register')")
+            ->and($authRoutes)->toContain("->name('password.request')")
+            ->and($authRoutes)->toContain("->name('verification.notice')")
+            ->and($authRoutes)->toContain("->middleware(['signed', 'throttle:6,1'])")
+            ->and($sessionController)->toContain("Inertia::render('session/Create'")
+            ->and($validEmailRule)->toContain('final readonly class ValidEmail');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
 });
 
-it('removes fortify from composer require and bootstrap providers when disabled', function () {
+it('generates react auth scaffold files with react route entrypoints', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/composer.json', json_encode([
         'name' => 'acme/demo',
-        'require' => [
-            'laravel/framework' => '^12.0',
-            'laravel/fortify' => '^1.36.1',
-        ],
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::view('/', 'welcome');\n");
     mkdir($basePath.'/bootstrap', 0777, true);
-    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n    App\\Providers\\FortifyServiceProvider::class,\n];\n");
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
     $action = new InstallAxiomAction(new Filesystem);
 
@@ -631,23 +641,103 @@ it('removes fortify from composer require and bootstrap providers when disabled'
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authScaffold: AuthScaffoldPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
                 installComposerScripts: false,
                 overwriteFiles: false,
+                frontendStack: FrontendStack::InertiaReact,
             ),
             $basePath,
         );
 
-        /** @var array<string, mixed> $composer */
-        $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
-        $providers = (string) file_get_contents($basePath.'/bootstrap/providers.php');
+        expect($basePath.'/resources/js/pages/session/create.tsx')->toBeFile()
+            ->and((string) file_get_contents($basePath.'/app/Http/Controllers/SessionController.php'))
+            ->toContain("Inertia::render('session/create'");
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
 
-        expect($composer['require'])->not->toHaveKey('laravel/fortify')
-            ->and($providers)->not->toContain('App\\Providers\\FortifyServiceProvider::class');
+it('generates blade auth scaffold files with blade views', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::view('/', 'welcome');\n");
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authScaffold: AuthScaffoldPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+                frontendStack: FrontendStack::Blade,
+            ),
+            $basePath,
+        );
+
+        expect($basePath.'/resources/views/session/create.blade.php')->toBeFile()
+            ->and((string) file_get_contents($basePath.'/app/Http/Controllers/SessionController.php'))
+            ->toContain("return view('session.create'");
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('removes fortify leftover actions when app managed auth is installed', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::view('/', 'welcome');\n");
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+    mkdir($basePath.'/app/Actions', 0777, true);
+    file_put_contents($basePath.'/app/Actions/DeleteUser.php', '<?php');
+    file_put_contents($basePath.'/app/Actions/UpdateUser.php', '<?php');
+    file_put_contents($basePath.'/app/Actions/UpdateUserPassword.php', '<?php');
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authScaffold: AuthScaffoldPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+                frontendStack: FrontendStack::InertiaVue,
+            ),
+            $basePath,
+        );
+
+        expect($basePath.'/app/Actions/DeleteUser.php')->not->toBeFile()
+            ->and($basePath.'/app/Actions/UpdateUser.php')->not->toBeFile()
+            ->and($basePath.'/app/Actions/UpdateUserPassword.php')->not->toBeFile();
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }

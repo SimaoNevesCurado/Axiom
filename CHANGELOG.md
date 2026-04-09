@@ -2,10 +2,20 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.2.9 - 2026-04-07
+
+- add stack-aware app-managed auth scaffolding aligned with the reference starter kit auth flow shape
+- add frontend stack detection (`inertia-vue`, `inertia-react`, `blade`) for auth scaffold publishing
+- keep Fortify installed/configured while allowing explicit app-authored auth routes/controllers/pages
+- publish auth scaffold to `routes/auth.php` and add `require __DIR__.'/auth.php';` to `routes/web.php` idempotently
+- add dedicated auth scaffold installer subsystem and tests for stack detection and scaffold defaults
+- remove known Fortify leftover auth actions when app-managed auth is generated
+- run `composer update` automatically after install when `composer.json` changes (with `--no-composer-update` opt-out)
+
 ## 0.2.8 - 2026-04-06
 
 - always show the `Use Server Side Rendering?` prompt in interactive installs
-- add a `Use Fortify?` installer prompt that syncs `laravel/fortify` in `composer.json`
+- detect `laravel/fortify` and let the installer choose between Fortify-managed auth routes or `routes/auth.php`
 
 ## 0.2.7 - 2026-04-06
 

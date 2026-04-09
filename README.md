@@ -41,8 +41,8 @@ You can also run it non-interactively:
 ```bash
 php artisan axiom:install \
   --ai=boost \
+  --auth-routes=app-managed \
   --skills \
-  --fortify \
   --ssr \
   --actions \
   --quality \
@@ -65,7 +65,9 @@ The installer can:
 
 - publish `AGENTS.md` or `CLAUDE.md`
 - publish `.ai/skills/*.md`
-- ask whether the project should use Fortify and sync `laravel/fortify` in `composer.json`
+- detect `laravel/fortify` in `composer.json` and ask whether auth stays Fortify-managed or gets an app-managed scaffold
+- detect frontend stack (`inertia-vue`, `inertia-react`, `blade`) and publish stack-aligned auth controllers and pages/views
+- remove known Fortify leftover auth actions when app-managed auth is generated
 - ask whether the project should use SSR and wire that into `composer dev`
 - create `app/Actions` and `app/Dto`
 - publish `phpstan.neon`, `rector.php`, `pint.json`, and `tests/Unit/ArchTest.php`
@@ -74,6 +76,7 @@ The installer can:
 - add opinionated `composer` scripts
 - add optional PHP tooling dependencies like PHPStan, Rector, Pint, Pest type coverage, Debugbar, and Telescope
 - add optional frontend tooling dependencies like Oxlint, Prettier, concurrently, and npm-check-updates
+- run `composer update` automatically when `composer.json` is changed (use `--no-composer-update` to skip)
 
 ## Generated Structure
 

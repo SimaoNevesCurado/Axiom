@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace SimaoCurado\Axiom\Commands;
 
 use Illuminate\Console\Command;
+use SimaoCurado\Axiom\Actions\DetectFrontendStackAction;
 use SimaoCurado\Axiom\Actions\InstallAxiomAction;
 use SimaoCurado\Axiom\Data\InstallSelections;
 use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Enums\AuthScaffoldPreset;
 use SimaoCurado\Axiom\Enums\DebugToolPreset;
+use Symfony\Component\Process\Process;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\multiselect;
@@ -18,8 +21,8 @@ final class AxiomCommand extends Command
 {
     protected $signature = 'axiom:install
         {--ai= : AI guideline preset (boost, codex, claude, none)}
+        {--auth-routes= : Authentication scaffold preset (fortify, app-managed)}
         {--skills : Install Axiom AI skills into .ai/skills}
-        {--fortify : Use Fortify in the project}
         {--ssr : Use SSR in frontend starter kits}
         {--actions : Install action-oriented architecture guidance}
         {--quality : Install quality and tooling guidance}
@@ -36,12 +39,16 @@ final class AxiomCommand extends Command
         {--prettier : Add Prettier and plugins to package.json}
         {--concurrently : Add concurrently to package.json}
         {--ncu : Add npm-check-updates to package.json}
+        {--no-composer-update : Skip automatic composer update after install}
         {--force : Overwrite existing files}';
 
     protected $description = 'Install opinionated Axiom presets into the host application';
 
-    public function handle(InstallAxiomAction $installAxiom): int
+    public function handle(InstallAxiomAction $installAxiom, DetectFrontendStackAction $detectFrontendStack): int
     {
+        $frontendStack = $detectFrontendStack->handle(base_path())->stack;
+        $hasFortifyInstalled = $this->hasFortifyInstalled();
+
         $installQualityGuidelines = $this->resolveToggle(
             option: 'quality',
             question: 'Install quality presets?',
@@ -56,7 +63,7 @@ final class AxiomCommand extends Command
                 option: 'skills',
                 question: 'Install AI skills?',
             ),
-            installFortify: $this->resolveFortify(),
+            authScaffold: $this->resolveAuthScaffold($hasFortifyInstalled),
             installSsr: $this->resolveSsr(),
             installArchitectureGuidelines: $this->resolveToggle(
                 option: 'actions',
@@ -84,6 +91,7 @@ final class AxiomCommand extends Command
             installNpmCheckUpdates: $frontendTools['ncu'],
             debugTool: $this->resolveDebugTool(),
             overwriteFiles: (bool) $this->option('force'),
+            frontendStack: $frontendStack,
         );
 
         $result = $installAxiom->handle($selections, base_path());
@@ -115,7 +123,12 @@ final class AxiomCommand extends Command
         $this->line('  Next steps:');
 
         if (in_array('composer.json', $result->written, true)) {
-            $this->line('  • Run `composer update` to sync new PHP dependencies and update composer.lock.');
+            if (! $this->shouldSkipComposerUpdate()) {
+                $this->line('  • Running `composer update`...');
+                $this->runComposerUpdate();
+            } else {
+                $this->line('  • Run `composer update` to sync new PHP dependencies and update composer.lock.');
+            }
         } else {
             $this->line('  • Run `composer install` if you still need to install PHP dependencies.');
         }
@@ -129,6 +142,31 @@ final class AxiomCommand extends Command
         $this->line('  • Review `AGENTS.md` and `.ai/skills/*` if you installed AI guidance.');
 
         return self::SUCCESS;
+    }
+
+    private function shouldSkipComposerUpdate(): bool
+    {
+        return (bool) $this->option('no-composer-update');
+    }
+
+    private function runComposerUpdate(): void
+    {
+        $process = new Process(['composer', 'update'], base_path());
+        $process->setTimeout(null);
+
+        $exitCode = $process->run(function (string $type, string $buffer): void {
+            if ($type === Process::OUT) {
+                $this->output->write($buffer);
+
+                return;
+            }
+
+            $this->output->write("<fg=red>{$buffer}</>");
+        });
+
+        if ($exitCode !== 0) {
+            $this->components->warn('`composer update` failed. Run it manually to sync dependencies.');
+        }
     }
 
     private function resolveAiGuidelines(): AiGuidelinePreset
@@ -169,15 +207,6 @@ final class AxiomCommand extends Command
         );
     }
 
-    private function resolveFrontendToggle(string $option, string $question): bool
-    {
-        if (! file_exists(base_path('package.json'))) {
-            return false;
-        }
-
-        return $this->resolveToggle($option, $question);
-    }
-
     private function resolveSsr(): bool
     {
         if ((bool) $this->option('ssr')) {
@@ -195,21 +224,30 @@ final class AxiomCommand extends Command
         );
     }
 
-    private function resolveFortify(): bool
+    private function resolveAuthScaffold(bool $hasFortifyInstalled): AuthScaffoldPreset
     {
-        if ((bool) $this->option('fortify')) {
-            return true;
+        $option = $this->option('auth-routes');
+
+        if (is_string($option) && $option !== '') {
+            return AuthScaffoldPreset::fromOption($option);
+        }
+
+        if (! $hasFortifyInstalled) {
+            return AuthScaffoldPreset::AppManaged;
         }
 
         if (! $this->input->isInteractive()) {
-            return false;
+            return AuthScaffoldPreset::Fortify;
         }
 
-        return confirm(
-            label: 'Use Fortify?',
-            default: $this->hasFortifyInstalled(),
-            hint: 'If enabled, Axiom keeps laravel/fortify in composer.json.',
+        /** @var string $selection */
+        $selection = select(
+            label: 'Authentication routes',
+            options: AuthScaffoldPreset::labels(),
+            default: AuthScaffoldPreset::Fortify->value,
         );
+
+        return AuthScaffoldPreset::from($selection);
     }
 
     private function hasSsrEntrypoint(): bool

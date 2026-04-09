@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Forgot password</title>
+</head>
+<body>
+    <h1>Forgot password</h1>
+
+    @if (! empty($status))
+        <p>{{ $status }}</p>
+    @endif
+
+    <form method="post" action="{{ route('password.email') }}">
+        @csrf
+
+        <label>
+            Email
+            <input type="email" name="email" value="{{ old('email') }}" required>
+        </label>
+
+        <button type="submit">Send reset link</button>
+    </form>
+
+    <a href="{{ route('login') }}">Back to login</a>
+</body>
+</html>

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Str;
+use SimaoCurado\Axiom\Enums\AuthScaffoldPreset;
 
 it('installs the selected presets non-interactively', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
@@ -13,6 +14,8 @@ it('installs the selected presets non-interactively', function () {
     file_put_contents($basePath.'/package.json', json_encode([
         'name' => 'demo',
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::view('/', 'welcome');\n");
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
 
@@ -21,8 +24,8 @@ it('installs the selected presets non-interactively', function () {
     try {
         $this->artisan('axiom:install', [
             '--ai' => 'boost',
+            '--auth-routes' => AuthScaffoldPreset::AppManaged->value,
             '--skills' => true,
-            '--fortify' => true,
             '--ssr' => true,
             '--actions' => true,
             '--quality' => true,
@@ -36,6 +39,7 @@ it('installs the selected presets non-interactively', function () {
             '--prettier' => true,
             '--concurrently' => true,
             '--ncu' => true,
+            '--no-composer-update' => true,
             '--debug-tool' => 'debugbar',
             '--force' => true,
             '--no-interaction' => true,
@@ -55,7 +59,7 @@ it('installs the selected presets non-interactively', function () {
             ->and($basePath.'/app/Dto/.gitkeep')->toBeFile()
             ->and($basePath.'/config/axiom.php')->toBeFile()
             ->and($basePath.'/app/Providers/AxiomServiceProvider.php')->toBeFile()
-            ->and($composer['require'])->toHaveKey('laravel/fortify')
+            ->and($basePath.'/routes/auth.php')->toBeFile()
             ->and($composer['scripts'])->toHaveKey('setup')
             ->and($composer['scripts'])->toHaveKey('dev')
             ->and($composer['scripts'])->toHaveKey('fix:rector')
@@ -105,3 +109,64 @@ function deleteDirectoryForInstallCommandTest(string $path): void
 
     rmdir($path);
 }
+
+it('defaults to app managed auth when fortify is not installed', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+    $originalBasePath = base_path();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::view('/', 'welcome');\n");
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    app()->setBasePath($basePath);
+
+    try {
+        $this->artisan('axiom:install', [
+            '--ai' => 'none',
+            '--no-composer-update' => true,
+            '--no-interaction' => true,
+        ])->assertExitCode(0);
+
+        expect($basePath.'/routes/auth.php')->toBeFile();
+    } finally {
+        app()->setBasePath($originalBasePath);
+        deleteDirectoryForInstallCommandTest($basePath);
+    }
+});
+
+it('keeps fortify managed auth by default in non interactive mode when fortify is installed', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+    $originalBasePath = base_path();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/fortify' => '^1.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::view('/', 'welcome');\n");
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    app()->setBasePath($basePath);
+
+    try {
+        $this->artisan('axiom:install', [
+            '--ai' => 'none',
+            '--no-composer-update' => true,
+            '--no-interaction' => true,
+        ])->assertExitCode(0);
+
+        expect($basePath.'/routes/auth.php')->not->toBeFile();
+    } finally {
+        app()->setBasePath($originalBasePath);
+        deleteDirectoryForInstallCommandTest($basePath);
+    }
+});
