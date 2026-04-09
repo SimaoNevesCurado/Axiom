@@ -149,8 +149,13 @@ final class AxiomCommand extends Command
     private function renderInstallBanner(): void
     {
         if (! $this->output->isDecorated()) {
-            $this->line('AXIOM');
-            $this->newLine();
+            $this->renderPlainBanner();
+
+            return;
+        }
+
+        if (! $this->shouldUseFancyBanner() || ! $this->supportsTrueColor()) {
+            $this->renderPlainBanner();
 
             return;
         }
@@ -173,6 +178,43 @@ final class AxiomCommand extends Command
         $this->newLine();
         $this->line($this->gradient('Axiom Installer'));
         $this->newLine();
+    }
+
+    private function renderPlainBanner(): void
+    {
+        $this->newLine();
+        $this->line(' █████╗ ██╗  ██╗██╗ ██████╗ ███╗   ███╗');
+        $this->line('██╔══██╗╚██╗██╔╝██║██╔═══██╗████╗ ████║');
+        $this->line('███████║ ╚███╔╝ ██║██║   ██║██╔████╔██║');
+        $this->line('██╔══██║ ██╔██╗ ██║██║   ██║██║╚██╔╝██║');
+        $this->line('██║  ██║██╔╝ ██╗██║╚██████╔╝██║ ╚═╝ ██║');
+        $this->line('╚═╝  ╚═╝╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝     ╚═╝');
+        $this->newLine();
+        $this->line('Axiom Installer');
+        $this->newLine();
+    }
+
+    private function shouldUseFancyBanner(): bool
+    {
+        $value = getenv('AXIOM_FANCY_BANNER');
+
+        if ($value === false) {
+            return false;
+        }
+
+        return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private function supportsTrueColor(): bool
+    {
+        $term = strtolower((string) getenv('TERM'));
+        $colorTerm = strtolower((string) getenv('COLORTERM'));
+
+        if ($term === 'dumb') {
+            return false;
+        }
+
+        return str_contains($colorTerm, 'truecolor') || str_contains($colorTerm, '24bit');
     }
 
     private function gradient(string $text): string
