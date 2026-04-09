@@ -161,10 +161,6 @@ final class AxiomCommand extends Command
         $c129 = "\033[38;5;129m";
         $c93 = "\033[38;5;93m";
         $c57 = "\033[38;5;57m";
-        $c165 = "\033[38;5;165m";
-        $c201 = "\033[38;5;201m";
-        $c207 = "\033[38;5;207m";
-        $c213 = "\033[38;5;213m";
         $reset = "\033[0m";
 
         $this->line($c208.' █████╗ ██╗  ██╗██╗ ██████╗ '.$reset);
@@ -174,13 +170,7 @@ final class AxiomCommand extends Command
         $this->line($c93.' ██║  ██║██╔╝ ██╗██║╚██████╔╝'.$reset);
         $this->line($c57.' ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝ ╚═════╝ '.$reset);
         $this->newLine();
-        $this->line($c93.' ███╗   ███╗'.$reset);
-        $this->line($c129.'████╗ ████║'.$reset);
-        $this->line($c165.'██╔████╔██║'.$reset);
-        $this->line($c201.'██║╚██╔╝██║'.$reset);
-        $this->line($c207.'██║ ╚═╝ ██║'.$reset);
-        $this->line($c213.'╚═╝     ╚═╝'.$reset);
-        $this->newLine();
+        $this->line($c93.'A X I O M'.$reset);
         $this->line($c93.'Axiom Installer'.$reset);
         $this->newLine();
     }
