@@ -177,7 +177,6 @@ final class AxiomCommand extends Command
         $this->line($r3.'██╔══██║'.$p1.' ██╔██╗ '.$p2.'██║██║   ██║'.$reset);
         $this->line($r4.' ██║  ██║'.$p2.'██╔╝ ██╗'.$p3.'██║╚██████╔╝'.$reset);
         $this->line($r5.' ╚═╝  ╚═╝'.$p3.'╚═╝  ╚═╝'.$p6.'╚═╝ ╚═════╝ '.$reset);
-        $this->newLine();
         $this->line($p3.' ███╗   ███╗'.$reset);
         $this->line($p4.'████╗ ████║'.$reset);
         $this->line($p5.'██╔████╔██║'.$reset);
