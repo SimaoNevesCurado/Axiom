@@ -715,6 +715,14 @@ it('removes fortify leftover actions when app managed auth is installed', functi
     file_put_contents($basePath.'/app/Actions/DeleteUser.php', '<?php');
     file_put_contents($basePath.'/app/Actions/UpdateUser.php', '<?php');
     file_put_contents($basePath.'/app/Actions/UpdateUserPassword.php', '<?php');
+    mkdir($basePath.'/app/Actions/Fortify', 0777, true);
+    file_put_contents($basePath.'/app/Actions/Fortify/CreateNewUser.php', '<?php');
+    file_put_contents($basePath.'/app/Actions/Fortify/ResetUserPassword.php', '<?php');
+    file_put_contents($basePath.'/app/Actions/Fortify/UpdateUserPassword.php', '<?php');
+    file_put_contents($basePath.'/app/Actions/Fortify/UpdateUserProfileInformation.php', '<?php');
+    mkdir($basePath.'/app/Http/Controllers', 0777, true);
+    file_put_contents($basePath.'/app/Http/Controllers/UserProfileController.php', '<?php');
+    file_put_contents($basePath.'/app/Http/Controllers/UserTwoFactorAuthenticationController.php', '<?php');
 
     $action = new InstallAxiomAction(new Filesystem);
 
@@ -737,7 +745,114 @@ it('removes fortify leftover actions when app managed auth is installed', functi
 
         expect($basePath.'/app/Actions/DeleteUser.php')->not->toBeFile()
             ->and($basePath.'/app/Actions/UpdateUser.php')->not->toBeFile()
-            ->and($basePath.'/app/Actions/UpdateUserPassword.php')->not->toBeFile();
+            ->and($basePath.'/app/Actions/UpdateUserPassword.php')->not->toBeFile()
+            ->and($basePath.'/app/Actions/Fortify/CreateNewUser.php')->not->toBeFile()
+            ->and($basePath.'/app/Actions/Fortify/ResetUserPassword.php')->not->toBeFile()
+            ->and($basePath.'/app/Actions/Fortify/UpdateUserPassword.php')->not->toBeFile()
+            ->and($basePath.'/app/Actions/Fortify/UpdateUserProfileInformation.php')->not->toBeFile()
+            ->and($basePath.'/app/Http/Controllers/UserProfileController.php')->not->toBeFile()
+            ->and($basePath.'/app/Http/Controllers/UserTwoFactorAuthenticationController.php')->not->toBeFile();
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('does not add routes auth file when auth routes already exist in web php', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents(
+        $basePath.'/routes/web.php',
+        "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::get('login', fn () => 'login')->name('login');\nRoute::post('logout', fn () => 'logout')->name('logout');\n",
+    );
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authScaffold: AuthScaffoldPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+                frontendStack: FrontendStack::InertiaVue,
+            ),
+            $basePath,
+        );
+
+        $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
+
+        expect($basePath.'/routes/auth.php')->not->toBeFile()
+            ->and($webRoutes)->not->toContain("require __DIR__.'/auth.php';");
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('disables fortify route registration in fortify service provider', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::view('/', 'welcome');\n");
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+    mkdir($basePath.'/app/Providers', 0777, true);
+    file_put_contents($basePath.'/app/Providers/FortifyServiceProvider.php', <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+final class FortifyServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        //
+    }
+}
+PHP);
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authScaffold: AuthScaffoldPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+                frontendStack: FrontendStack::InertiaVue,
+            ),
+            $basePath,
+        );
+
+        $provider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
+
+        expect($provider)->toContain('use Laravel\\Fortify\\Fortify;')
+            ->and($provider)->toContain('Fortify::ignoreRoutes();');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }

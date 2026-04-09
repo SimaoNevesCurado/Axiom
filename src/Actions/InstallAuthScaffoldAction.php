@@ -22,9 +22,21 @@ final readonly class InstallAuthScaffoldAction
         array &$written,
         array &$skipped,
     ): void {
+        $shouldSkipAuthRoutes = $this->shouldSkipAuthRoutesFile(
+            basePath: $basePath,
+            overwrite: $overwrite,
+        );
+
         $this->pruneFortifyLeftovers($basePath);
+        $this->disableFortifyRouteRegistration($basePath);
 
         foreach ($this->manifest($stack) as $targetPath => $stubPath) {
+            if ($targetPath === 'routes/auth.php' && $shouldSkipAuthRoutes) {
+                $this->appendUnique($skipped, 'routes/auth.php');
+
+                continue;
+            }
+
             $this->writeFile(
                 path: $basePath.'/'.$targetPath,
                 content: $this->stub($stubPath),
@@ -35,11 +47,56 @@ final readonly class InstallAuthScaffoldAction
             );
         }
 
-        $this->registerWebRoutesInclude(
-            basePath: $basePath,
-            written: $written,
-            skipped: $skipped,
-        );
+        if (! $shouldSkipAuthRoutes) {
+            $this->registerWebRoutesInclude(
+                basePath: $basePath,
+                written: $written,
+                skipped: $skipped,
+            );
+        }
+    }
+
+    private function shouldSkipAuthRoutesFile(string $basePath, bool $overwrite): bool
+    {
+        if ($overwrite) {
+            return false;
+        }
+
+        $authRoutesPath = $basePath.'/routes/auth.php';
+
+        if ($this->files->exists($authRoutesPath)) {
+            return false;
+        }
+
+        return $this->hasAuthRoutesInWebFile($basePath);
+    }
+
+    private function hasAuthRoutesInWebFile(string $basePath): bool
+    {
+        $webRoutesPath = $basePath.'/routes/web.php';
+
+        if (! $this->files->exists($webRoutesPath)) {
+            return false;
+        }
+
+        $webRoutes = (string) $this->files->get($webRoutesPath);
+
+        $needles = [
+            "->name('login')",
+            "->name('register')",
+            "->name('password.request')",
+            "->name('verification.notice')",
+            "->name('verification.verify')",
+            "->name('logout')",
+        ];
+
+        foreach ($needles as $needle) {
+            if (str_contains($webRoutes, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function pruneFortifyLeftovers(string $basePath): void
@@ -48,6 +105,13 @@ final readonly class InstallAuthScaffoldAction
             'app/Actions/DeleteUser.php',
             'app/Actions/UpdateUser.php',
             'app/Actions/UpdateUserPassword.php',
+            'app/Actions/Fortify/CreateNewUser.php',
+            'app/Actions/Fortify/PasswordValidationRules.php',
+            'app/Actions/Fortify/ResetUserPassword.php',
+            'app/Actions/Fortify/UpdateUserPassword.php',
+            'app/Actions/Fortify/UpdateUserProfileInformation.php',
+            'app/Http/Controllers/UserProfileController.php',
+            'app/Http/Controllers/UserTwoFactorAuthenticationController.php',
         ];
 
         foreach ($paths as $path) {
@@ -57,6 +121,42 @@ final readonly class InstallAuthScaffoldAction
                 $this->files->delete($absolutePath);
             }
         }
+    }
+
+    private function disableFortifyRouteRegistration(string $basePath): void
+    {
+        $providerPath = $basePath.'/app/Providers/FortifyServiceProvider.php';
+
+        if (! $this->files->exists($providerPath)) {
+            return;
+        }
+
+        $contents = (string) $this->files->get($providerPath);
+
+        if (str_contains($contents, 'Fortify::ignoreRoutes();')) {
+            return;
+        }
+
+        if (! str_contains($contents, 'use Laravel\\Fortify\\Fortify;')) {
+            $contents = str_replace(
+                "use Illuminate\\Support\\ServiceProvider;\n",
+                "use Illuminate\\Support\\ServiceProvider;\nuse Laravel\\Fortify\\Fortify;\n",
+                $contents,
+            );
+        }
+
+        $updated = preg_replace(
+            '/public function boot\(\): void\s*\{\n/',
+            "public function boot(): void\n    {\n        Fortify::ignoreRoutes();\n",
+            $contents,
+            1,
+        );
+
+        if (! is_string($updated) || $updated === $contents) {
+            return;
+        }
+
+        $this->files->put($providerPath, $updated);
     }
 
     /**
