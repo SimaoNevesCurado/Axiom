@@ -154,8 +154,14 @@ final class AxiomCommand extends Command
             return;
         }
 
-        if (! $this->shouldUseFancyBanner() || ! $this->supportsTrueColor()) {
-            $this->renderPlainBanner();
+        if (! $this->shouldUseFancyBanner()) {
+            $this->renderSafeColorBanner();
+
+            return;
+        }
+
+        if (! $this->supportsTrueColor()) {
+            $this->renderSafeColorBanner();
 
             return;
         }
@@ -177,6 +183,31 @@ final class AxiomCommand extends Command
 
         $this->newLine();
         $this->line($this->gradient('Axiom Installer'));
+        $this->newLine();
+    }
+
+    private function renderSafeColorBanner(): void
+    {
+        $reset = "\033[0m";
+        $palette = ['208', '214', '220', '201', '165', '129', '93'];
+        $lines = [
+            ' █████╗ ██╗  ██╗██╗ ██████╗ ███╗   ███╗',
+            '██╔══██╗╚██╗██╔╝██║██╔═══██╗████╗ ████║',
+            '███████║ ╚███╔╝ ██║██║   ██║██╔████╔██║',
+            '██╔══██║ ██╔██╗ ██║██║   ██║██║╚██╔╝██║',
+            '██║  ██║██╔╝ ██╗██║╚██████╔╝██║ ╚═╝ ██║',
+            '╚═╝  ╚═╝╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝     ╚═╝',
+        ];
+
+        $this->newLine();
+
+        foreach ($lines as $index => $line) {
+            $color = $palette[$index % count($palette)];
+            $this->line("\033[38;5;{$color}m{$line}{$reset}");
+        }
+
+        $this->newLine();
+        $this->line("\033[38;5;129mAxiom Installer{$reset}");
         $this->newLine();
     }
 
