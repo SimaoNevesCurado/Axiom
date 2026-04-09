@@ -155,25 +155,33 @@ final class AxiomCommand extends Command
             return;
         }
 
-        $pink = "\033[38;2;231;132;255m";
-        $violet = "\033[38;2;191;124;255m";
-        $cyan = "\033[38;2;72;199;255m";
+        $c208 = "\033[38;5;208m";
+        $c214 = "\033[38;5;214m";
+        $c220 = "\033[38;5;220m";
+        $c129 = "\033[38;5;129m";
+        $c93 = "\033[38;5;93m";
+        $c57 = "\033[38;5;57m";
+        $c165 = "\033[38;5;165m";
+        $c201 = "\033[38;5;201m";
+        $c207 = "\033[38;5;207m";
+        $c213 = "\033[38;5;213m";
         $reset = "\033[0m";
 
-        $lines = [
-            '  /^^\\    \\  /   |  /^^\\   |\\  /| ',
-            ' / /\\ \\    \\/    | / /\\ \\  | \\/ | ',
-            ' \\ \\/ /    /\\    | \\ \\/ /  | |\\ | ',
-            '  \\__/    /  \\   |  \\__/   |_| \\_| ',
-            '        A   X   I   O   M         ',
-        ];
-
-        $palette = [$violet, $pink, $cyan, $violet, $cyan];
-        foreach ($lines as $index => $line) {
-            $this->line($palette[$index].$line.$reset);
-        }
-
-        $this->line($pink.'Axiom Installer'.$reset);
+        $this->line($c208.' █████╗ ██╗  ██╗██╗ ██████╗ '.$reset);
+        $this->line($c214.'██╔══██╗╚██╗██╔╝██║██╔═══██╗'.$reset);
+        $this->line($c220.'███████║ ╚███╔╝ ██║██║   ██║'.$reset);
+        $this->line($c129.'██╔══██║ ██╔██╗ ██║██║   ██║'.$reset);
+        $this->line($c93.' ██║  ██║██╔╝ ██╗██║╚██████╔╝'.$reset);
+        $this->line($c57.' ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝ ╚═════╝ '.$reset);
+        $this->newLine();
+        $this->line($c93.' ███╗   ███╗'.$reset);
+        $this->line($c129.'████╗ ████║'.$reset);
+        $this->line($c165.'██╔████╔██║'.$reset);
+        $this->line($c201.'██║╚██╔╝██║'.$reset);
+        $this->line($c207.'██║ ╚═╝ ██║'.$reset);
+        $this->line($c213.'╚═╝     ╚═╝'.$reset);
+        $this->newLine();
+        $this->line($c93.'Axiom Installer'.$reset);
         $this->newLine();
     }
 
