@@ -1254,6 +1254,85 @@ PHP);
     }
 });
 
+it('falls back to Fortify routes when starter auth pages exist but app-managed controllers are missing', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+            'laravel/fortify' => '^1.36.1',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n    App\\Providers\\FortifyServiceProvider::class,\n];\n");
+    mkdir($basePath.'/resources/js/pages/auth', 0777, true);
+    file_put_contents($basePath.'/resources/js/pages/auth/ConfirmPassword.vue', "<template />\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+// Axiom app-managed auth routes...
+Route::middleware('guest')->group(function (): void {
+    Route::get('login', fn (): string => 'old')->name('login');
+});
+PHP);
+    mkdir($basePath.'/app/Providers', 0777, true);
+    file_put_contents($basePath.'/app/Providers/FortifyServiceProvider.php', <<<'PHP'
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+use Laravel\Fortify\Fortify;
+
+class FortifyServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        Fortify::ignoreRoutes();
+    }
+
+    public function boot(): void
+    {
+        //
+    }
+}
+PHP);
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
+        $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
+
+        expect($result->written)->toContain('routes/web.php')
+            ->toContain('app/Providers/FortifyServiceProvider.php')
+            ->and($webRoutes)->not->toContain('// Axiom app-managed auth routes...')
+            ->and($fortifyProvider)->not->toContain('Fortify::ignoreRoutes();');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 function deleteDirectoryForInstallActionTest(string $path): void
 {
     if (! is_dir($path)) {

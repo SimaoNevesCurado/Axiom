@@ -178,16 +178,20 @@ final readonly class InstallAxiomAction
         }
 
         if ($selections->authRoutes === AuthRoutesPreset::AppManaged) {
+            $fallbackToFortifyRoutes = $this->shouldFallbackToFortifyRoutes($basePath);
+
             $this->configureAppManagedAuthRoutes(
                 basePath: $basePath,
                 written: $written,
                 skipped: $skipped,
+                fallbackToFortifyRoutes: $fallbackToFortifyRoutes,
             );
 
             $this->configureFortifyProviderToIgnoreRoutes(
                 basePath: $basePath,
                 written: $written,
                 skipped: $skipped,
+                shouldIgnoreRoutes: ! $fallbackToFortifyRoutes,
             );
         }
 
@@ -401,6 +405,7 @@ final readonly class InstallAxiomAction
         string $basePath,
         array &$written,
         array &$skipped,
+        bool $shouldIgnoreRoutes,
     ): void {
         $providerPath = $basePath.'/app/Providers/FortifyServiceProvider.php';
 
@@ -413,7 +418,7 @@ final readonly class InstallAxiomAction
         $contents = (string) $this->files->get($providerPath);
         $updated = $contents;
 
-        if (! str_contains($updated, 'use Laravel\\Fortify\\Fortify;')) {
+        if (! str_contains($updated, 'use Laravel\\Fortify\\Fortify;') && $shouldIgnoreRoutes) {
             if (preg_match_all('/^use\s+[^;]+;\s*$/m', $updated, $matches, PREG_OFFSET_CAPTURE) === false) {
                 $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
 
@@ -449,6 +454,19 @@ final readonly class InstallAxiomAction
         }
 
         $updated = $updatedWithoutIgnoreRoutes;
+
+        if (! $shouldIgnoreRoutes) {
+            if ($updated === $contents) {
+                $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
+
+                return;
+            }
+
+            $this->files->put($providerPath, $updated);
+            $this->appendUnique($written, 'app/Providers/FortifyServiceProvider.php');
+
+            return;
+        }
 
         $updatedWithIgnoreRoutes = preg_replace(
             '/function\s+register\s*\([^)]*\)\s*(?::\s*void)?\s*\{\s*/m',
@@ -497,7 +515,12 @@ final readonly class InstallAxiomAction
      * @param  list<string>  &$written
      * @param  list<string>  &$skipped
      */
-    private function configureAppManagedAuthRoutes(string $basePath, array &$written, array &$skipped): void
+    private function configureAppManagedAuthRoutes(
+        string $basePath,
+        array &$written,
+        array &$skipped,
+        bool $fallbackToFortifyRoutes,
+    ): void
     {
         $routesPath = $basePath.'/routes/web.php';
 
@@ -509,10 +532,12 @@ final readonly class InstallAxiomAction
         $updated = $this->stripAxiomRouteBlocks($contents);
         $hasChanges = $updated !== $contents;
         $routesContents = $this->routesContents($basePath, $updated);
-        $missingAppManagedRoutes = $this->missingRoutes(
-            $routesContents,
-            $this->appManagedRouteDefinitions(),
-        );
+        $missingAppManagedRoutes = $fallbackToFortifyRoutes
+            ? []
+            : $this->missingRoutes(
+                $routesContents,
+                $this->appManagedRouteDefinitions(),
+            );
         $hasFortify = $this->hasFortifyInstalled($basePath);
 
         if ($missingAppManagedRoutes !== []) {
@@ -525,7 +550,7 @@ final readonly class InstallAxiomAction
             $routesContents = $this->routesContents($basePath, $updated);
         }
 
-        if ($hasFortify) {
+        if ($hasFortify && ! $fallbackToFortifyRoutes) {
             $compatibility = $this->ensureFortifyCompatibilityRoutes($updated, $routesContents);
 
             if ($compatibility['changed']) {
@@ -664,6 +689,36 @@ final readonly class InstallAxiomAction
         }
 
         return array_key_exists('laravel/fortify', $composer['require']);
+    }
+
+    private function shouldFallbackToFortifyRoutes(string $basePath): bool
+    {
+        if ($this->hasAppManagedAuthControllers($basePath)) {
+            return false;
+        }
+
+        return $this->files->exists($basePath.'/resources/js/pages/auth/ConfirmPassword.vue');
+    }
+
+    private function hasAppManagedAuthControllers(string $basePath): bool
+    {
+        $requiredControllers = [
+            'SessionController.php',
+            'UserController.php',
+            'UserEmailResetNotificationController.php',
+            'UserEmailVerificationController.php',
+            'UserEmailVerificationNotificationController.php',
+            'UserPasswordController.php',
+            'UserTwoFactorAuthenticationController.php',
+        ];
+
+        foreach ($requiredControllers as $controller) {
+            if (! $this->files->exists($basePath.'/app/Http/Controllers/'.$controller)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function routesContents(string $basePath, ?string $webRoutesOverride = null): string

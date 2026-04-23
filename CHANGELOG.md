@@ -2,6 +2,12 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.7 - 2026-04-23
+
+- add automatic fallback to Fortify-managed routes in starter-kit projects that include auth pages but lack app-managed auth controllers
+- when fallback is active, stop injecting app-managed auth blocks and strip stale Axiom auth blocks from `routes/web.php`
+- when fallback is active, remove `Fortify::ignoreRoutes();` so Fortify package routes remain available for Wayfinder exports
+
 ## 0.3.6 - 2026-04-23
 
 - align app-managed reset-password route naming with Fortify conventions by using `password.update`
