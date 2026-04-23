@@ -520,8 +520,7 @@ final readonly class InstallAxiomAction
         array &$written,
         array &$skipped,
         bool $fallbackToFortifyRoutes,
-    ): void
-    {
+    ): void {
         $routesPath = $basePath.'/routes/web.php';
 
         if (! $this->files->exists($routesPath)) {
