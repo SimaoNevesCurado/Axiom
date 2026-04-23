@@ -2,6 +2,13 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.3 - 2026-04-23
+
+- in app-managed auth mode, merge only missing auth routes instead of skipping the entire block
+- detect existing auth routes across `routes/*.php` before appending new routes
+- avoid adding Fortify compatibility routes when equivalent routes are already defined
+- add regression coverage for mixed and fully pre-defined auth route scenarios
+
 ## 0.3.2 - 2026-04-23
 
 - in app-managed auth mode, add web routes for the auth flow when needed

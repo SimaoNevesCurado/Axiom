@@ -480,19 +480,24 @@ final readonly class InstallAxiomAction
         $contents = (string) $this->files->get($routesPath);
         $updated = $contents;
         $hasChanges = false;
-        $hasAppManagedBlock = str_contains($updated, 'Axiom app-managed auth routes');
-        $hasLoginRoute = preg_match("/Route::get\\(\\s*'login'\\s*,/m", $updated) === 1;
-        $hasLogoutRoute = preg_match("/Route::post\\(\\s*'logout'\\s*,/m", $updated) === 1;
+        $routesContents = $this->routesContents($basePath);
+        $missingAppManagedRoutes = $this->missingRoutes(
+            $routesContents,
+            $this->appManagedRouteDefinitions(),
+        );
         $hasFortify = $this->hasFortifyInstalled($basePath);
 
-        if (! $hasAppManagedBlock && ! $hasLoginRoute && ! $hasLogoutRoute) {
+        if ($missingAppManagedRoutes !== []) {
             $updated = $this->ensureAuthControllerImports($updated);
-            $updated .= "\n\n".$this->appManagedAuthRoutesStub()."\n";
+            $updated .= "\n\n".$this->renderRouteBlock(
+                'Axiom app-managed auth routes',
+                $missingAppManagedRoutes,
+            )."\n";
             $hasChanges = true;
         }
 
         if ($hasFortify) {
-            $compatibility = $this->ensureFortifyCompatibilityRoutes($updated);
+            $compatibility = $this->ensureFortifyCompatibilityRoutes($updated, $this->routesContents($basePath));
 
             if ($compatibility['changed']) {
                 $updated = $compatibility['contents'];
@@ -556,18 +561,22 @@ final readonly class InstallAxiomAction
     /**
      * @return array{contents: string, changed: bool}
      */
-    private function ensureFortifyCompatibilityRoutes(string $contents): array
+    private function ensureFortifyCompatibilityRoutes(string $contents, string $routesContents): array
     {
-        $alreadyHasBlock = str_contains($contents, 'Axiom Fortify compatibility routes');
-        $hasTwoFactorLogin = preg_match("/->name\\(\\s*'two-factor\\.login'\\s*\\)/m", $contents) === 1;
-        $hasPasswordConfirm = preg_match("/->name\\(\\s*'password\\.confirm'\\s*\\)/m", $contents) === 1;
+        $missingCompatibilityRoutes = $this->missingRoutes(
+            $routesContents,
+            $this->fortifyCompatibilityRouteDefinitions(),
+        );
 
-        if ($alreadyHasBlock || ($hasTwoFactorLogin && $hasPasswordConfirm)) {
+        if ($missingCompatibilityRoutes === []) {
             return ['contents' => $contents, 'changed' => false];
         }
 
         $updated = $this->ensureFortifyControllerImports($contents);
-        $updated .= "\n\n".$this->fortifyCompatibilityRoutesStub()."\n";
+        $updated .= "\n\n".$this->renderRouteBlock(
+            'Axiom Fortify compatibility routes',
+            $missingCompatibilityRoutes,
+        )."\n";
 
         return ['contents' => $updated, 'changed' => $updated !== $contents];
     }
@@ -628,74 +637,136 @@ final readonly class InstallAxiomAction
         return array_key_exists('laravel/fortify', $composer['require']);
     }
 
-    private function appManagedAuthRoutesStub(): string
+    private function routesContents(string $basePath): string
     {
-        return <<<'PHP'
-// Axiom app-managed auth routes...
-Route::middleware('guest')->group(function (): void {
-    // Session...
-    Route::get('login', [SessionController::class, 'create'])
-        ->name('login');
-    Route::post('login', [SessionController::class, 'store'])
-        ->name('login.store');
+        $routesDirectory = $basePath.'/routes';
 
-    // User...
-    Route::get('register', [UserController::class, 'create'])
-        ->name('register');
-    Route::post('register', [UserController::class, 'store'])
-        ->name('register.store');
+        if (! $this->files->isDirectory($routesDirectory)) {
+            return '';
+        }
 
-    // User Password...
-    Route::get('forgot-password', [UserEmailResetNotificationController::class, 'create'])
-        ->name('password.request');
-    Route::post('forgot-password', [UserEmailResetNotificationController::class, 'store'])
-        ->name('password.email');
-    Route::get('reset-password/{token}', [UserPasswordController::class, 'create'])
-        ->name('password.reset');
-    Route::post('reset-password', [UserPasswordController::class, 'store'])
-        ->name('password.store');
-});
+        $files = $this->files->files($routesDirectory);
+        usort(
+            $files,
+            static fn (\SplFileInfo $left, \SplFileInfo $right): int => strcmp($left->getPathname(), $right->getPathname()),
+        );
 
-Route::middleware('auth')->group(function (): void {
-    // User Email Verification...
-    Route::get('verify-email', [UserEmailVerificationNotificationController::class, 'create'])
-        ->name('verification.notice');
-    Route::post('email/verification-notification', [UserEmailVerificationNotificationController::class, 'store'])
-        ->middleware('throttle:6,1')
-        ->name('verification.send');
-    Route::get('verify-email/{id}/{hash}', [UserEmailVerificationController::class, 'update'])
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
+        $contents = [];
 
-    // User Two-Factor Authentication...
-    Route::get('settings/two-factor', [UserTwoFactorAuthenticationController::class, 'show'])
-        ->name('two-factor.show');
+        foreach ($files as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
 
-    // Session...
-    Route::post('logout', [SessionController::class, 'destroy'])
-        ->name('logout');
-});
-PHP;
+            $path = $file->getPathname();
+
+            if (! $this->files->exists($path)) {
+                continue;
+            }
+
+            $contents[] = (string) $this->files->get($path);
+        }
+
+        return implode("\n\n", $contents);
     }
 
-    private function fortifyCompatibilityRoutesStub(): string
+    private function hasNamedRoute(string $contents, string $name): bool
     {
-        return <<<'PHP'
-// Axiom Fortify compatibility routes...
-Route::middleware('guest')->group(function (): void {
-    Route::get('two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'create'])
-        ->name('two-factor.login');
-    Route::post('two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'store'])
-        ->name('two-factor.login.store');
-});
+        return preg_match("/->name\\(\\s*'".preg_quote($name, '/')."'\\s*\\)/m", $contents) === 1;
+    }
 
-Route::middleware('auth')->group(function (): void {
-    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
-        ->name('password.confirm');
-    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])
-        ->name('password.confirmation');
-});
-PHP;
+    /**
+     * @return list<array{name: string, middleware: 'guest'|'auth', method: 'get'|'post', uri: string, code: string}>
+     */
+    private function appManagedRouteDefinitions(): array
+    {
+        return [
+            ['name' => 'login', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'login', 'code' => "Route::get('login', [SessionController::class, 'create'])\n    ->name('login');"],
+            ['name' => 'login.store', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'login', 'code' => "Route::post('login', [SessionController::class, 'store'])\n    ->name('login.store');"],
+            ['name' => 'register', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'register', 'code' => "Route::get('register', [UserController::class, 'create'])\n    ->name('register');"],
+            ['name' => 'register.store', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'register', 'code' => "Route::post('register', [UserController::class, 'store'])\n    ->name('register.store');"],
+            ['name' => 'password.request', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'forgot-password', 'code' => "Route::get('forgot-password', [UserEmailResetNotificationController::class, 'create'])\n    ->name('password.request');"],
+            ['name' => 'password.email', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'forgot-password', 'code' => "Route::post('forgot-password', [UserEmailResetNotificationController::class, 'store'])\n    ->name('password.email');"],
+            ['name' => 'password.reset', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'reset-password/{token}', 'code' => "Route::get('reset-password/{token}', [UserPasswordController::class, 'create'])\n    ->name('password.reset');"],
+            ['name' => 'password.store', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'reset-password', 'code' => "Route::post('reset-password', [UserPasswordController::class, 'store'])\n    ->name('password.store');"],
+            ['name' => 'verification.notice', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'verify-email', 'code' => "Route::get('verify-email', [UserEmailVerificationNotificationController::class, 'create'])\n    ->name('verification.notice');"],
+            ['name' => 'verification.send', 'middleware' => 'auth', 'method' => 'post', 'uri' => 'email/verification-notification', 'code' => "Route::post('email/verification-notification', [UserEmailVerificationNotificationController::class, 'store'])\n    ->middleware('throttle:6,1')\n    ->name('verification.send');"],
+            ['name' => 'verification.verify', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'verify-email/{id}/{hash}', 'code' => "Route::get('verify-email/{id}/{hash}', [UserEmailVerificationController::class, 'update'])\n    ->middleware(['signed', 'throttle:6,1'])\n    ->name('verification.verify');"],
+            ['name' => 'two-factor.show', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'settings/two-factor', 'code' => "Route::get('settings/two-factor', [UserTwoFactorAuthenticationController::class, 'show'])\n    ->name('two-factor.show');"],
+            ['name' => 'logout', 'middleware' => 'auth', 'method' => 'post', 'uri' => 'logout', 'code' => "Route::post('logout', [SessionController::class, 'destroy'])\n    ->name('logout');"],
+        ];
+    }
+
+    /**
+     * @return list<array{name: string, middleware: 'guest'|'auth', method: 'get'|'post', uri: string, code: string}>
+     */
+    private function fortifyCompatibilityRouteDefinitions(): array
+    {
+        return [
+            ['name' => 'two-factor.login', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'two-factor-challenge', 'code' => "Route::get('two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'create'])\n    ->name('two-factor.login');"],
+            ['name' => 'two-factor.login.store', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'two-factor-challenge', 'code' => "Route::post('two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'store'])\n    ->name('two-factor.login.store');"],
+            ['name' => 'password.confirm', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'confirm-password', 'code' => "Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])\n    ->name('password.confirm');"],
+            ['name' => 'password.confirmation', 'middleware' => 'auth', 'method' => 'post', 'uri' => 'confirm-password', 'code' => "Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])\n    ->name('password.confirmation');"],
+        ];
+    }
+
+    /**
+     * @param  list<array{name: string, middleware: 'guest'|'auth', method: 'get'|'post', uri: string, code: string}>  $definitions
+     * @return list<array{name: string, middleware: 'guest'|'auth', method: 'get'|'post', uri: string, code: string}>
+     */
+    private function missingRoutes(string $routesContents, array $definitions): array
+    {
+        $missing = [];
+
+        foreach ($definitions as $definition) {
+            if ($this->hasNamedRoute($routesContents, $definition['name'])) {
+                continue;
+            }
+
+            $methodPattern = preg_quote($definition['method'], '/');
+            $uriPattern = preg_quote($definition['uri'], '/');
+            $hasMethodAndUri = preg_match("/Route::{$methodPattern}\\(\\s*'{$uriPattern}'\\s*,/m", $routesContents) === 1;
+
+            if ($hasMethodAndUri) {
+                continue;
+            }
+
+            $missing[] = $definition;
+        }
+
+        return $missing;
+    }
+
+    /**
+     * @param  list<array{name: string, middleware: 'guest'|'auth', method: 'get'|'post', uri: string, code: string}>  $definitions
+     */
+    private function renderRouteBlock(string $label, array $definitions): string
+    {
+        $guestRoutes = array_values(array_filter(
+            $definitions,
+            static fn (array $definition): bool => $definition['middleware'] === 'guest',
+        ));
+        $authRoutes = array_values(array_filter(
+            $definitions,
+            static fn (array $definition): bool => $definition['middleware'] === 'auth',
+        ));
+        $blocks = [];
+
+        foreach ([$guestRoutes, $authRoutes] as $middlewareRoutes) {
+            if ($middlewareRoutes === []) {
+                continue;
+            }
+
+            $middleware = $middlewareRoutes[0]['middleware'];
+            $routes = array_map(
+                static fn (array $definition): string => preg_replace('/^/m', '    ', $definition['code']) ?? $definition['code'],
+                $middlewareRoutes,
+            );
+
+            $blocks[] = "Route::middleware('{$middleware}')->group(function (): void {\n".implode("\n\n", $routes)."\n});";
+        }
+
+        return '// '.$label.'...'."\n".implode("\n\n", $blocks);
     }
 
     /**
