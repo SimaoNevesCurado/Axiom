@@ -436,7 +436,35 @@ final readonly class InstallAxiomAction
             }
         }
 
-        if (! str_contains($updated, 'Fortify::ignoreRoutes();')) {
+        $updatedWithoutIgnoreRoutes = preg_replace(
+            '/^\h*Fortify::ignoreRoutes\(\);\h*\R?/m',
+            '',
+            $updated,
+        );
+
+        if ($updatedWithoutIgnoreRoutes === null) {
+            $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
+
+            return;
+        }
+
+        $updated = $updatedWithoutIgnoreRoutes;
+
+        $updatedWithIgnoreRoutes = preg_replace(
+            '/function\s+register\s*\([^)]*\)\s*(?::\s*void)?\s*\{\s*/m',
+            "function register(): void\n    {\n        Fortify::ignoreRoutes();\n\n        ",
+            $updated,
+            1,
+            $count,
+        );
+
+        if ($updatedWithIgnoreRoutes === null) {
+            $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
+
+            return;
+        }
+
+        if ($count === 0) {
             $updatedWithIgnoreRoutes = preg_replace(
                 '/function\s+boot\s*\([^)]*\)\s*(?::\s*void)?\s*\{\s*/m',
                 "function boot(): void\n    {\n        Fortify::ignoreRoutes();\n\n        ",
@@ -450,9 +478,9 @@ final readonly class InstallAxiomAction
 
                 return;
             }
-
-            $updated = $updatedWithIgnoreRoutes;
         }
+
+        $updated = $updatedWithIgnoreRoutes;
 
         if ($updated === $contents) {
             $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');

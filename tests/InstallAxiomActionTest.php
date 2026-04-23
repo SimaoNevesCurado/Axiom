@@ -913,6 +913,11 @@ use Illuminate\Support\ServiceProvider;
 
 class FortifyServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        //
+    }
+
     public function boot(): void
     {
         //
@@ -947,13 +952,79 @@ PHP);
         expect($composer['require'])->toHaveKey('laravel/fortify')
             ->and($providers)->toContain('App\\Providers\\FortifyServiceProvider::class')
             ->and($fortifyProvider)->toContain('use Laravel\\Fortify\\Fortify;')
-            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();')
+            ->and($fortifyProvider)->toContain("function register(): void\n    {\n        Fortify::ignoreRoutes();")
+            ->and($fortifyProvider)->not->toContain("function boot(): void\n    {\n        Fortify::ignoreRoutes();")
             ->and($webRoutes)->toContain('// Axiom app-managed auth routes...')
             ->and($webRoutes)->toContain("Route::get('login', [SessionController::class, 'create'])")
             ->and($webRoutes)->toContain("Route::post('logout', [SessionController::class, 'destroy'])")
             ->and($webRoutes)->toContain('// Axiom Fortify compatibility routes...')
             ->and($webRoutes)->toContain("->name('two-factor.login');")
             ->and($webRoutes)->toContain("->name('password.confirm');");
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('moves Fortify ignoreRoutes from boot to register when already present in boot', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+            'laravel/fortify' => '^1.36.1',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n    App\\Providers\\FortifyServiceProvider::class,\n];\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\n");
+    mkdir($basePath.'/app/Providers', 0777, true);
+    file_put_contents($basePath.'/app/Providers/FortifyServiceProvider.php', <<<'PHP'
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+use Laravel\Fortify\Fortify;
+
+class FortifyServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        //
+    }
+
+    public function boot(): void
+    {
+        Fortify::ignoreRoutes();
+    }
+}
+PHP);
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
+
+        expect($fortifyProvider)->toContain("function register(): void\n    {\n        Fortify::ignoreRoutes();")
+            ->and($fortifyProvider)->not->toContain("function boot(): void\n    {\n        Fortify::ignoreRoutes();");
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }

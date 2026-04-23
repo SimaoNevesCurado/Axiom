@@ -2,6 +2,13 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.5 - 2026-04-23
+
+- move `Fortify::ignoreRoutes();` injection to `FortifyServiceProvider::register()` so Fortify package routes are disabled before route registration
+- migrate existing providers that still have `Fortify::ignoreRoutes();` in `boot()` to `register()`
+- keep fallback insertion in `boot()` only when a `register()` method is unavailable
+- add regression coverage for providers with stale `boot()`-based `ignoreRoutes` wiring
+
 ## 0.3.4 - 2026-04-23
 
 - clean previously generated Axiom auth route blocks from `routes/web.php` before reapplying route merge logic
