@@ -6,6 +6,7 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/simaocurado/axiom.svg?style=flat-square)](https://packagist.org/packages/simaocurado/axiom)
 
 `axiom` is an opinionated package for Laravel projects that want stronger defaults from day one.
+It works best on freshly created Laravel projects, where conventions can be applied early with minimal friction.
 
 It brings the same direction used in my starter kits into an existing Laravel app: actions, DTOs, enums, stricter quality tooling, AI guidelines, and a more disciplined baseline for code generation and project setup.
 
@@ -42,7 +43,7 @@ You can also run it non-interactively:
 php artisan axiom:install \
   --ai=boost \
   --skills \
-  --fortify \
+  --auth-routes=fortify \
   --ssr \
   --actions \
   --quality \
@@ -65,7 +66,10 @@ The installer can:
 
 - publish `AGENTS.md` or `CLAUDE.md`
 - publish `.ai/skills/*.md`
-- ask whether the project should use Fortify and sync `laravel/fortify` in `composer.json`
+- ask whether auth routes should be Fortify or app-managed (`routes/web.php`)
+- detect `laravel/fortify` in `composer.json` before enabling Fortify route mode
+- when app-managed mode is selected, add `Fortify::ignoreRoutes();` to `App\Providers\FortifyServiceProvider`
+- when app-managed mode is selected, ensure ignored Fortify routes are present in `routes/web.php` (including 2FA challenge and password confirmation routes)
 - ask whether the project should use SSR and wire that into `composer dev`
 - create `app/Actions` and `app/Dto`
 - publish `phpstan.neon`, `rector.php`, `pint.json`, and `tests/Unit/ArchTest.php`

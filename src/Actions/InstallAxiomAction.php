@@ -178,6 +178,12 @@ final readonly class InstallAxiomAction
         }
 
         if ($selections->authRoutes === AuthRoutesPreset::AppManaged) {
+            $this->configureAppManagedAuthRoutes(
+                basePath: $basePath,
+                written: $written,
+                skipped: $skipped,
+            );
+
             $this->configureFortifyProviderToIgnoreRoutes(
                 basePath: $basePath,
                 written: $written,
@@ -457,6 +463,239 @@ final readonly class InstallAxiomAction
         $this->files->put($providerPath, $updated);
 
         $this->appendUnique($written, 'app/Providers/FortifyServiceProvider.php');
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function configureAppManagedAuthRoutes(string $basePath, array &$written, array &$skipped): void
+    {
+        $routesPath = $basePath.'/routes/web.php';
+
+        if (! $this->files->exists($routesPath)) {
+            return;
+        }
+
+        $contents = (string) $this->files->get($routesPath);
+        $updated = $contents;
+        $hasChanges = false;
+        $hasAppManagedBlock = str_contains($updated, 'Axiom app-managed auth routes');
+        $hasLoginRoute = preg_match("/Route::get\\(\\s*'login'\\s*,/m", $updated) === 1;
+        $hasLogoutRoute = preg_match("/Route::post\\(\\s*'logout'\\s*,/m", $updated) === 1;
+        $hasFortify = $this->hasFortifyInstalled($basePath);
+
+        if (! $hasAppManagedBlock && ! $hasLoginRoute && ! $hasLogoutRoute) {
+            $updated = $this->ensureAuthControllerImports($updated);
+            $updated .= "\n\n".$this->appManagedAuthRoutesStub()."\n";
+            $hasChanges = true;
+        }
+
+        if ($hasFortify) {
+            $compatibility = $this->ensureFortifyCompatibilityRoutes($updated);
+
+            if ($compatibility['changed']) {
+                $updated = $compatibility['contents'];
+                $hasChanges = true;
+            }
+        }
+
+        if (! $hasChanges || $updated === $contents) {
+            $this->appendUnique($skipped, 'routes/web.php');
+
+            return;
+        }
+
+        $this->files->put($routesPath, $updated);
+        $this->appendUnique($written, 'routes/web.php');
+    }
+
+    private function ensureAuthControllerImports(string $contents): string
+    {
+        $imports = [
+            'use App\\Http\\Controllers\\SessionController;',
+            'use App\\Http\\Controllers\\UserController;',
+            'use App\\Http\\Controllers\\UserEmailResetNotificationController;',
+            'use App\\Http\\Controllers\\UserEmailVerificationController;',
+            'use App\\Http\\Controllers\\UserEmailVerificationNotificationController;',
+            'use App\\Http\\Controllers\\UserPasswordController;',
+            'use App\\Http\\Controllers\\UserTwoFactorAuthenticationController;',
+        ];
+
+        $missing = array_values(array_filter(
+            $imports,
+            static fn (string $import): bool => ! str_contains($contents, $import),
+        ));
+
+        if ($missing === []) {
+            return $contents;
+        }
+
+        if (preg_match_all('/^use\s+[^;]+;\s*$/m', $contents, $matches, PREG_OFFSET_CAPTURE) !== false && $matches[0] !== []) {
+            $last = $matches[0][array_key_last($matches[0])];
+            $line = $last[0];
+            $offset = $last[1] + strlen($line);
+
+            return substr($contents, 0, $offset)."\n".implode("\n", $missing).substr($contents, $offset);
+        }
+
+        if (preg_match('/^declare\s*\(strict_types=1\);\s*$/m', $contents, $declare, PREG_OFFSET_CAPTURE) === 1) {
+            $line = $declare[0][0];
+            $offset = $declare[0][1] + strlen($line);
+
+            return substr($contents, 0, $offset)."\n\n".implode("\n", $missing).substr($contents, $offset);
+        }
+
+        if (str_starts_with($contents, '<?php')) {
+            return "<?php\n\n".implode("\n", $missing)."\n".ltrim(substr($contents, 5), "\n");
+        }
+
+        return implode("\n", $missing)."\n\n".$contents;
+    }
+
+    /**
+     * @return array{contents: string, changed: bool}
+     */
+    private function ensureFortifyCompatibilityRoutes(string $contents): array
+    {
+        $alreadyHasBlock = str_contains($contents, 'Axiom Fortify compatibility routes');
+        $hasTwoFactorLogin = preg_match("/->name\\(\\s*'two-factor\\.login'\\s*\\)/m", $contents) === 1;
+        $hasPasswordConfirm = preg_match("/->name\\(\\s*'password\\.confirm'\\s*\\)/m", $contents) === 1;
+
+        if ($alreadyHasBlock || ($hasTwoFactorLogin && $hasPasswordConfirm)) {
+            return ['contents' => $contents, 'changed' => false];
+        }
+
+        $updated = $this->ensureFortifyControllerImports($contents);
+        $updated .= "\n\n".$this->fortifyCompatibilityRoutesStub()."\n";
+
+        return ['contents' => $updated, 'changed' => $updated !== $contents];
+    }
+
+    private function ensureFortifyControllerImports(string $contents): string
+    {
+        $imports = [
+            'use Laravel\\Fortify\\Http\\Controllers\\ConfirmablePasswordController;',
+            'use Laravel\\Fortify\\Http\\Controllers\\TwoFactorAuthenticatedSessionController;',
+        ];
+
+        $missing = array_values(array_filter(
+            $imports,
+            static fn (string $import): bool => ! str_contains($contents, $import),
+        ));
+
+        if ($missing === []) {
+            return $contents;
+        }
+
+        if (preg_match_all('/^use\s+[^;]+;\s*$/m', $contents, $matches, PREG_OFFSET_CAPTURE) !== false && $matches[0] !== []) {
+            $last = $matches[0][array_key_last($matches[0])];
+            $line = $last[0];
+            $offset = $last[1] + strlen($line);
+
+            return substr($contents, 0, $offset)."\n".implode("\n", $missing).substr($contents, $offset);
+        }
+
+        if (preg_match('/^declare\s*\(strict_types=1\);\s*$/m', $contents, $declare, PREG_OFFSET_CAPTURE) === 1) {
+            $line = $declare[0][0];
+            $offset = $declare[0][1] + strlen($line);
+
+            return substr($contents, 0, $offset)."\n\n".implode("\n", $missing).substr($contents, $offset);
+        }
+
+        if (str_starts_with($contents, '<?php')) {
+            return "<?php\n\n".implode("\n", $missing)."\n".ltrim(substr($contents, 5), "\n");
+        }
+
+        return implode("\n", $missing)."\n\n".$contents;
+    }
+
+    private function hasFortifyInstalled(string $basePath): bool
+    {
+        $composerPath = $basePath.'/composer.json';
+
+        if (! $this->files->exists($composerPath)) {
+            return false;
+        }
+
+        /** @var array<string, mixed>|null $composer */
+        $composer = json_decode((string) $this->files->get($composerPath), true);
+
+        if (! is_array($composer) || ! isset($composer['require']) || ! is_array($composer['require'])) {
+            return false;
+        }
+
+        return array_key_exists('laravel/fortify', $composer['require']);
+    }
+
+    private function appManagedAuthRoutesStub(): string
+    {
+        return <<<'PHP'
+// Axiom app-managed auth routes...
+Route::middleware('guest')->group(function (): void {
+    // Session...
+    Route::get('login', [SessionController::class, 'create'])
+        ->name('login');
+    Route::post('login', [SessionController::class, 'store'])
+        ->name('login.store');
+
+    // User...
+    Route::get('register', [UserController::class, 'create'])
+        ->name('register');
+    Route::post('register', [UserController::class, 'store'])
+        ->name('register.store');
+
+    // User Password...
+    Route::get('forgot-password', [UserEmailResetNotificationController::class, 'create'])
+        ->name('password.request');
+    Route::post('forgot-password', [UserEmailResetNotificationController::class, 'store'])
+        ->name('password.email');
+    Route::get('reset-password/{token}', [UserPasswordController::class, 'create'])
+        ->name('password.reset');
+    Route::post('reset-password', [UserPasswordController::class, 'store'])
+        ->name('password.store');
+});
+
+Route::middleware('auth')->group(function (): void {
+    // User Email Verification...
+    Route::get('verify-email', [UserEmailVerificationNotificationController::class, 'create'])
+        ->name('verification.notice');
+    Route::post('email/verification-notification', [UserEmailVerificationNotificationController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+    Route::get('verify-email/{id}/{hash}', [UserEmailVerificationController::class, 'update'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+
+    // User Two-Factor Authentication...
+    Route::get('settings/two-factor', [UserTwoFactorAuthenticationController::class, 'show'])
+        ->name('two-factor.show');
+
+    // Session...
+    Route::post('logout', [SessionController::class, 'destroy'])
+        ->name('logout');
+});
+PHP;
+    }
+
+    private function fortifyCompatibilityRoutesStub(): string
+    {
+        return <<<'PHP'
+// Axiom Fortify compatibility routes...
+Route::middleware('guest')->group(function (): void {
+    Route::get('two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'create'])
+        ->name('two-factor.login');
+    Route::post('two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'store'])
+        ->name('two-factor.login.store');
+});
+
+Route::middleware('auth')->group(function (): void {
+    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
+        ->name('password.confirm');
+    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])
+        ->name('password.confirmation');
+});
+PHP;
     }
 
     /**

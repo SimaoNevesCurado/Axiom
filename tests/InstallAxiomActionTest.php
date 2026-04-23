@@ -893,6 +893,16 @@ it('adds Fortify ignoreRoutes in app managed mode', function () {
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n    App\\Providers\\FortifyServiceProvider::class,\n];\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', fn (): string => 'ok');
+PHP);
     mkdir($basePath.'/app/Providers', 0777, true);
     file_put_contents($basePath.'/app/Providers/FortifyServiceProvider.php', <<<'PHP'
 <?php
@@ -932,11 +942,71 @@ PHP);
         $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
         $providers = (string) file_get_contents($basePath.'/bootstrap/providers.php');
         $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
+        $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
 
         expect($composer['require'])->toHaveKey('laravel/fortify')
             ->and($providers)->toContain('App\\Providers\\FortifyServiceProvider::class')
             ->and($fortifyProvider)->toContain('use Laravel\\Fortify\\Fortify;')
-            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();');
+            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();')
+            ->and($webRoutes)->toContain('// Axiom app-managed auth routes...')
+            ->and($webRoutes)->toContain("Route::get('login', [SessionController::class, 'create'])")
+            ->and($webRoutes)->toContain("Route::post('logout', [SessionController::class, 'destroy'])")
+            ->and($webRoutes)->toContain('// Axiom Fortify compatibility routes...')
+            ->and($webRoutes)->toContain("->name('two-factor.login');")
+            ->and($webRoutes)->toContain("->name('password.confirm');");
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('does not duplicate app managed auth routes when login route already exists, while adding fortify compatibility routes', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+            'laravel/fortify' => '^1.36.1',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+use App\Http\Controllers\SessionController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('login', [SessionController::class, 'create'])->name('login');
+PHP);
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
+
+        expect($result->written)->toContain('routes/web.php')
+            ->and($webRoutes)->not->toContain('// Axiom app-managed auth routes...')
+            ->and($webRoutes)->toContain('// Axiom Fortify compatibility routes...')
+            ->and($webRoutes)->toContain("->name('two-factor.login');")
+            ->and($webRoutes)->toContain("->name('password.confirm');");
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }

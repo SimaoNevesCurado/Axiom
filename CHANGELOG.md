@@ -2,6 +2,14 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.2 - 2026-04-23
+
+- in app-managed auth mode, add web routes for the auth flow when needed
+- ensure Fortify ignored routes are available in `routes/web.php` when using `Fortify::ignoreRoutes()`
+- include compatibility routes for two-factor challenge and password confirmation
+- keep app-managed route insertion idempotent when login/logout routes already exist
+- clarify in README that Axiom works best on freshly created projects
+
 ## 0.3.1 - 2026-04-23
 
 - add frontend-aware AI guideline profiles for `vue`, `react`, and `none`
