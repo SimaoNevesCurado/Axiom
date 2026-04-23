@@ -1,0 +1,33 @@
+# Axiom Gemini Guidelines
+
+This project follows Axiom conventions.
+
+## App Actions
+
+- Prefer reusable Action classes in `app/Actions` for business logic.
+- Name actions by what they do and keep one focused public `handle()` method.
+- Inject dependencies via constructor promoted properties.
+- Generate actions with `php artisan make:action "{name}" --no-interaction`.
+- Use `DB::transaction()` for multi-model write flows when needed.
+
+## Architecture
+
+- Prefer DTOs over associative arrays at application boundaries.
+- Keep controllers thin and move business logic into actions.
+- Follow existing project structure and naming conventions.
+
+## PHP And Quality
+
+- Use `declare(strict_types=1);`.
+- Prefer `final` classes and explicit typing.
+- Prefer `readonly` objects when mutation is not required.
+- Avoid `dd`, `dump`, or `ray` in committed code.
+- Keep static analysis and formatting tools strict.
+
+## Testing
+
+- Add or update tests whenever behavior changes.
+
+## Skills
+
+- Use `.ai/skills/actions.md`, `.ai/skills/dto.md`, `.ai/skills/enum.md`, `.ai/skills/crud.md`, and `.ai/skills/quality.md`.

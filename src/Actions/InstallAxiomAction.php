@@ -65,7 +65,7 @@ final readonly class InstallAxiomAction
         foreach ($guidelines as $guideline) {
             $this->writeFile(
                 path: $this->aiGuidelinesPath($basePath, $guideline),
-                content: $this->stub($this->aiGuidelinesStub($guideline)),
+                content: $this->stub($this->aiGuidelinesStub($guideline, $basePath)),
                 overwrite: $selections->overwriteFiles,
                 written: $written,
                 skipped: $skipped,
@@ -227,16 +227,77 @@ final readonly class InstallAxiomAction
         };
     }
 
-    private function aiGuidelinesStub(AiGuidelinePreset $preset): string
+    private function aiGuidelinesStub(AiGuidelinePreset $preset, string $basePath): string
     {
+        $frontendProfile = $this->frontendProfile($basePath);
+
+        if ($frontendProfile === 'vue') {
+            return match ($preset) {
+                AiGuidelinePreset::Boost, AiGuidelinePreset::Codex => 'ai/AGENTS.vue.stub',
+                AiGuidelinePreset::Claude => 'ai/CLAUDE.vue.stub',
+                AiGuidelinePreset::Gemini => 'ai/GEMINI.vue.stub',
+                AiGuidelinePreset::Opencode => 'ai/OPENCODE.stub',
+                AiGuidelinePreset::None => 'ai/AGENTS.vue.stub',
+            };
+        }
+
+        if ($frontendProfile === 'react') {
+            return match ($preset) {
+                AiGuidelinePreset::Boost, AiGuidelinePreset::Codex => 'ai/AGENTS.react.stub',
+                AiGuidelinePreset::Claude => 'ai/CLAUDE.react.stub',
+                AiGuidelinePreset::Gemini => 'ai/GEMINI.react.stub',
+                AiGuidelinePreset::Opencode => 'ai/OPENCODE.stub',
+                AiGuidelinePreset::None => 'ai/AGENTS.react.stub',
+            };
+        }
+
         return match ($preset) {
             AiGuidelinePreset::Boost => 'ai/AGENTS.boost.stub',
-            AiGuidelinePreset::Codex => 'ai/AGENTS.codex.stub',
-            AiGuidelinePreset::Claude => 'ai/CLAUDE.stub',
-            AiGuidelinePreset::Gemini => 'ai/GEMINI.stub',
+            AiGuidelinePreset::Codex => 'ai/AGENTS.none.stub',
+            AiGuidelinePreset::Claude => 'ai/CLAUDE.none.stub',
+            AiGuidelinePreset::Gemini => 'ai/GEMINI.none.stub',
             AiGuidelinePreset::Opencode => 'ai/OPENCODE.stub',
-            AiGuidelinePreset::None => 'ai/AGENTS.codex.stub',
+            AiGuidelinePreset::None => 'ai/AGENTS.none.stub',
         };
+    }
+
+    /**
+     * @return 'vue'|'react'|'none'
+     */
+    private function frontendProfile(string $basePath): string
+    {
+        $packagePath = $basePath.'/package.json';
+
+        if (! $this->files->exists($packagePath)) {
+            return 'none';
+        }
+
+        /** @var array<string, mixed>|null $package */
+        $package = json_decode((string) $this->files->get($packagePath), true);
+
+        if (! is_array($package)) {
+            return 'none';
+        }
+
+        $dependencies = [];
+
+        if (isset($package['dependencies']) && is_array($package['dependencies'])) {
+            $dependencies = array_merge($dependencies, array_keys($package['dependencies']));
+        }
+
+        if (isset($package['devDependencies']) && is_array($package['devDependencies'])) {
+            $dependencies = array_merge($dependencies, array_keys($package['devDependencies']));
+        }
+
+        if (in_array('react', $dependencies, true) || in_array('@inertiajs/react', $dependencies, true)) {
+            return 'react';
+        }
+
+        if (in_array('vue', $dependencies, true) || in_array('@inertiajs/vue3', $dependencies, true)) {
+            return 'vue';
+        }
+
+        return 'none';
     }
 
     /**

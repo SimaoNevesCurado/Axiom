@@ -1,0 +1,43 @@
+# Axiom AGENTS
+
+This project follows Axiom conventions.
+
+## App Actions
+
+- Prefer reusable Action classes in `app/Actions` for business logic.
+- Name actions by what they do, without requiring an `Action` suffix.
+- Keep one focused public `handle()` method per action.
+- Inject dependencies via constructor promoted properties.
+- Generate new actions with `php artisan make:action "{name}" --no-interaction`.
+- Wrap complex multi-model writes in `DB::transaction()` when appropriate.
+
+## Architecture
+
+- Prefer DTOs over associative arrays at application boundaries.
+- Keep controllers thin and move business logic into actions.
+- Reuse existing components and follow the current directory structure.
+
+## PHP And Style
+
+- Use `declare(strict_types=1);`.
+- Prefer `final` classes by default.
+- Prefer `readonly` objects when mutation is not required.
+- Always use explicit property, parameter, and return types.
+- Use constructor property promotion in `__construct()`.
+- Use curly braces for all control structures.
+- Avoid superfluous PHPDoc and inline comments.
+
+## Quality And Tests
+
+- Keep PHPStan, Rector, Pint, and related tooling strict.
+- Prefer static-analysis-friendly code over clever shortcuts.
+- Do not leave `dd`, `dump`, or `ray` in committed code.
+- Add or update tests whenever behavior changes.
+
+## Skills
+
+- Use `.ai/skills/actions.md` for action patterns.
+- Use `.ai/skills/dto.md` for DTO workflows.
+- Use `.ai/skills/enum.md` for enum usage.
+- Use `.ai/skills/crud.md` for CRUD structure.
+- Use `.ai/skills/quality.md` for verification flow.

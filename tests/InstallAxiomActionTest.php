@@ -170,6 +170,153 @@ it('writes gemini and opencode guideline files when selected', function () {
     }
 });
 
+it('writes vue-specific guideline stubs when the host project uses vue', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+        'dependencies' => [
+            'vue' => '^3.5.0',
+            '@inertiajs/vue3' => '^2.0.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                installPhpQualityDependencies: false,
+                installFrontendQualityDependencies: false,
+                overwriteFiles: true,
+                aiGuidelinePresets: [AiGuidelinePreset::Codex, AiGuidelinePreset::Claude, AiGuidelinePreset::Gemini],
+            ),
+            $basePath,
+        );
+
+        expect($result->written)->toContain('AGENTS.md')
+            ->toContain('CLAUDE.md')
+            ->toContain('GEMINI.md')
+            ->and(file_get_contents($basePath.'/AGENTS.md'))->toContain('<laravel-boost-guidelines>')
+            ->and(file_get_contents($basePath.'/CLAUDE.md'))->toContain('<laravel-boost-guidelines>')
+            ->and(file_get_contents($basePath.'/GEMINI.md'))->toContain('<laravel-boost-guidelines>');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('writes react-specific guideline stubs when the host project uses react', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+        'dependencies' => [
+            'react' => '^19.0.0',
+            '@inertiajs/react' => '^2.0.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                installPhpQualityDependencies: false,
+                installFrontendQualityDependencies: false,
+                overwriteFiles: true,
+                aiGuidelinePresets: [AiGuidelinePreset::Codex, AiGuidelinePreset::Claude, AiGuidelinePreset::Gemini],
+            ),
+            $basePath,
+        );
+
+        expect($result->written)->toContain('AGENTS.md')
+            ->toContain('CLAUDE.md')
+            ->toContain('GEMINI.md')
+            ->and(file_get_contents($basePath.'/AGENTS.md'))->toContain('<laravel-boost-guidelines>')
+            ->and(file_get_contents($basePath.'/CLAUDE.md'))->toContain('<laravel-boost-guidelines>')
+            ->and(file_get_contents($basePath.'/GEMINI.md'))->toContain('<laravel-boost-guidelines>');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('writes no-frontend guideline stubs when no frontend framework is detected', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+        'dependencies' => [
+            'lodash' => '^4.17.21',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                installPhpQualityDependencies: false,
+                installFrontendQualityDependencies: false,
+                overwriteFiles: true,
+                aiGuidelinePresets: [AiGuidelinePreset::Codex, AiGuidelinePreset::Claude, AiGuidelinePreset::Gemini],
+            ),
+            $basePath,
+        );
+
+        expect($result->written)->toContain('AGENTS.md')
+            ->toContain('CLAUDE.md')
+            ->toContain('GEMINI.md')
+            ->and(file_get_contents($basePath.'/AGENTS.md'))->toContain('# Axiom AGENTS')
+            ->and(file_get_contents($basePath.'/CLAUDE.md'))->toContain('# Axiom Claude Guidelines')
+            ->and(file_get_contents($basePath.'/GEMINI.md'))->toContain('# Axiom Gemini Guidelines')
+            ->and(file_get_contents($basePath.'/AGENTS.md'))->not->toContain('<laravel-boost-guidelines>');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 it('creates actions and dto folders when architecture is enabled', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 

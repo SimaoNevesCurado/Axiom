@@ -2,6 +2,14 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.1 - 2026-04-23
+
+- add frontend-aware AI guideline profiles for `vue`, `react`, and `none`
+- publish dedicated guideline stubs for React starter kits
+- publish explicit fallback guideline stubs when no frontend framework is detected
+- detect frontend profile from `package.json` dependencies when generating AI guideline files
+- add installer test coverage for React and no-frontend guideline generation
+
 ## 0.3.0 - 2026-04-23
 
 - add a startup banner for interactive installs
