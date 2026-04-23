@@ -9,6 +9,8 @@ enum AiGuidelinePreset: string
     case Boost = 'boost';
     case Codex = 'codex';
     case Claude = 'claude';
+    case Gemini = 'gemini';
+    case Opencode = 'opencode';
     case None = 'none';
 
     /**
@@ -20,6 +22,8 @@ enum AiGuidelinePreset: string
             self::Boost->value => 'Boost preset',
             self::Codex->value => 'Codex preset',
             self::Claude->value => 'Claude preset',
+            self::Gemini->value => 'Gemini preset',
+            self::Opencode->value => 'Opencode preset',
             self::None->value => 'Skip for now',
         ];
     }

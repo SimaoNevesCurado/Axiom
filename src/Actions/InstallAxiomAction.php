@@ -8,6 +8,7 @@ use Illuminate\Filesystem\Filesystem;
 use SimaoCurado\Axiom\Data\InstallResult;
 use SimaoCurado\Axiom\Data\InstallSelections;
 use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Enums\AuthRoutesPreset;
 use SimaoCurado\Axiom\Enums\DebugToolPreset;
 
 final readonly class InstallAxiomAction
@@ -25,6 +26,7 @@ final readonly class InstallAxiomAction
                 overwrite: $selections->overwriteFiles,
                 written: $written,
                 skipped: $skipped,
+                selectedSkills: $selections->aiSkills,
             );
         }
 
@@ -37,14 +39,6 @@ final readonly class InstallAxiomAction
                 skipped: $skipped,
             );
         }
-
-        $this->syncComposerDependencies(
-            selections: $selections,
-            basePath: $basePath,
-            overwrite: $selections->overwriteFiles,
-            written: $written,
-            skipped: $skipped,
-        );
 
         if ($this->composerDevDependencies($selections) !== []) {
             $this->writeComposerDevDependencies(
@@ -66,10 +60,12 @@ final readonly class InstallAxiomAction
             );
         }
 
-        if ($selections->aiGuidelines !== AiGuidelinePreset::None) {
+        $guidelines = $this->selectedAiGuidelines($selections);
+
+        foreach ($guidelines as $guideline) {
             $this->writeFile(
-                path: $this->aiGuidelinesPath($basePath, $selections->aiGuidelines),
-                content: $this->stub($this->aiGuidelinesStub($selections->aiGuidelines)),
+                path: $this->aiGuidelinesPath($basePath, $guideline),
+                content: $this->stub($this->aiGuidelinesStub($guideline)),
                 overwrite: $selections->overwriteFiles,
                 written: $written,
                 skipped: $skipped,
@@ -181,15 +177,43 @@ final readonly class InstallAxiomAction
             );
         }
 
-        if (! $selections->installFortify) {
-            $this->unregisterBootstrapProvider(
+        if ($selections->authRoutes === AuthRoutesPreset::AppManaged) {
+            $this->configureFortifyProviderToIgnoreRoutes(
                 basePath: $basePath,
-                provider: 'App\\Providers\\FortifyServiceProvider::class',
                 written: $written,
+                skipped: $skipped,
             );
         }
 
         return new InstallResult($written, $skipped);
+    }
+
+    /**
+     * @return list<AiGuidelinePreset>
+     */
+    private function selectedAiGuidelines(InstallSelections $selections): array
+    {
+        if ($selections->aiGuidelinePresets !== []) {
+            $normalized = [];
+
+            foreach ($selections->aiGuidelinePresets as $preset) {
+                if ($preset === AiGuidelinePreset::None) {
+                    continue;
+                }
+
+                if (! in_array($preset, $normalized, true)) {
+                    $normalized[] = $preset;
+                }
+            }
+
+            return $normalized;
+        }
+
+        if ($selections->aiGuidelines === AiGuidelinePreset::None) {
+            return [];
+        }
+
+        return [$selections->aiGuidelines];
     }
 
     private function aiGuidelinesPath(string $basePath, AiGuidelinePreset $preset): string
@@ -197,6 +221,8 @@ final readonly class InstallAxiomAction
         return match ($preset) {
             AiGuidelinePreset::Boost, AiGuidelinePreset::Codex => $basePath.'/AGENTS.md',
             AiGuidelinePreset::Claude => $basePath.'/CLAUDE.md',
+            AiGuidelinePreset::Gemini => $basePath.'/GEMINI.md',
+            AiGuidelinePreset::Opencode => $basePath.'/OPENCODE.md',
             AiGuidelinePreset::None => $basePath.'/AGENTS.md',
         };
     }
@@ -207,6 +233,8 @@ final readonly class InstallAxiomAction
             AiGuidelinePreset::Boost => 'ai/AGENTS.boost.stub',
             AiGuidelinePreset::Codex => 'ai/AGENTS.codex.stub',
             AiGuidelinePreset::Claude => 'ai/CLAUDE.stub',
+            AiGuidelinePreset::Gemini => 'ai/GEMINI.stub',
+            AiGuidelinePreset::Opencode => 'ai/OPENCODE.stub',
             AiGuidelinePreset::None => 'ai/AGENTS.codex.stub',
         };
     }
@@ -300,28 +328,74 @@ final readonly class InstallAxiomAction
 
     /**
      * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
      */
-    private function unregisterBootstrapProvider(
+    private function configureFortifyProviderToIgnoreRoutes(
         string $basePath,
-        string $provider,
         array &$written,
+        array &$skipped,
     ): void {
-        $providersPath = $basePath.'/bootstrap/providers.php';
+        $providerPath = $basePath.'/app/Providers/FortifyServiceProvider.php';
 
-        if (! $this->files->exists($providersPath)) {
+        if (! $this->files->exists($providerPath)) {
+            $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
+
             return;
         }
 
-        $contents = (string) $this->files->get($providersPath);
-        $updated = str_replace("    {$provider},\n", '', $contents);
+        $contents = (string) $this->files->get($providerPath);
+        $updated = $contents;
+
+        if (! str_contains($updated, 'use Laravel\\Fortify\\Fortify;')) {
+            if (preg_match_all('/^use\s+[^;]+;\s*$/m', $updated, $matches, PREG_OFFSET_CAPTURE) === false) {
+                $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
+
+                return;
+            }
+
+            if ($matches[0] !== []) {
+                $last = $matches[0][array_key_last($matches[0])];
+                $line = $last[0];
+                $offset = $last[1] + strlen($line);
+                $updated = substr($updated, 0, $offset)."\nuse Laravel\\Fortify\\Fortify;".substr($updated, $offset);
+            } elseif (preg_match('/^namespace\s+[^;]+;\s*$/m', $updated, $namespace, PREG_OFFSET_CAPTURE) === 1) {
+                $line = $namespace[0][0];
+                $offset = $namespace[0][1] + strlen($line);
+                $updated = substr($updated, 0, $offset)."\n\nuse Laravel\\Fortify\\Fortify;".substr($updated, $offset);
+            } else {
+                $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
+
+                return;
+            }
+        }
+
+        if (! str_contains($updated, 'Fortify::ignoreRoutes();')) {
+            $updatedWithIgnoreRoutes = preg_replace(
+                '/function\s+boot\s*\([^)]*\)\s*(?::\s*void)?\s*\{\s*/m',
+                "function boot(): void\n    {\n        Fortify::ignoreRoutes();\n\n        ",
+                $updated,
+                1,
+                $count,
+            );
+
+            if ($updatedWithIgnoreRoutes === null || $count === 0) {
+                $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
+
+                return;
+            }
+
+            $updated = $updatedWithIgnoreRoutes;
+        }
 
         if ($updated === $contents) {
+            $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
+
             return;
         }
 
-        $this->files->put($providersPath, $updated);
+        $this->files->put($providerPath, $updated);
 
-        $this->appendUnique($written, 'bootstrap/providers.php');
+        $this->appendUnique($written, 'app/Providers/FortifyServiceProvider.php');
     }
 
     /**
@@ -333,6 +407,7 @@ final readonly class InstallAxiomAction
         bool $overwrite,
         array &$written,
         array &$skipped,
+        array $selectedSkills,
     ): void {
         $skills = [
             'actions' => 'skills/actions.stub',
@@ -343,6 +418,10 @@ final readonly class InstallAxiomAction
         ];
 
         foreach ($skills as $name => $stub) {
+            if ($selectedSkills !== [] && ! in_array($name, $selectedSkills, true)) {
+                continue;
+            }
+
             $this->writeFile(
                 path: $basePath.'/.ai/skills/'.$name.'.md',
                 content: $this->stub($stub),
@@ -478,71 +557,6 @@ final readonly class InstallAxiomAction
         }
 
         ksort($composer['require-dev']);
-
-        $this->files->put(
-            $composerPath,
-            json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
-        );
-
-        $this->appendUnique($written, 'composer.json');
-    }
-
-    /**
-     * @param  list<string>  &$written
-     * @param  list<string>  &$skipped
-     */
-    private function syncComposerDependencies(
-        InstallSelections $selections,
-        string $basePath,
-        bool $overwrite,
-        array &$written,
-        array &$skipped,
-    ): void {
-        $composerPath = $basePath.'/composer.json';
-
-        if (! $this->files->exists($composerPath)) {
-            return;
-        }
-
-        /** @var array<string, mixed>|null $composer */
-        $composer = json_decode((string) $this->files->get($composerPath), true);
-
-        if (! is_array($composer)) {
-            $this->appendUnique($skipped, 'composer.json');
-
-            return;
-        }
-
-        $composer['require'] ??= [];
-
-        if (! is_array($composer['require'])) {
-            $this->appendUnique($skipped, 'composer.json');
-
-            return;
-        }
-
-        $hasChanges = false;
-        $fortifyPackage = 'laravel/fortify';
-
-        if ($selections->installFortify) {
-            if (! array_key_exists($fortifyPackage, $composer['require']) || $overwrite) {
-                if (($composer['require'][$fortifyPackage] ?? null) !== '^1.36.1') {
-                    $composer['require'][$fortifyPackage] = '^1.36.1';
-                    $hasChanges = true;
-                }
-            }
-        } elseif (array_key_exists($fortifyPackage, $composer['require'])) {
-            unset($composer['require'][$fortifyPackage]);
-            $hasChanges = true;
-        } else {
-            return;
-        }
-
-        if (! $hasChanges) {
-            return;
-        }
-
-        ksort($composer['require']);
 
         $this->files->put(
             $composerPath,

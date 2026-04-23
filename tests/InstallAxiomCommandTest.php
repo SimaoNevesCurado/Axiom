@@ -9,6 +9,10 @@ it('installs the selected presets non-interactively', function () {
     mkdir($basePath, 0777, true);
     file_put_contents($basePath.'/composer.json', json_encode([
         'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+            'laravel/fortify' => '^1.36.1',
+        ],
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
     file_put_contents($basePath.'/package.json', json_encode([
         'name' => 'demo',
@@ -22,7 +26,7 @@ it('installs the selected presets non-interactively', function () {
         $this->artisan('axiom:install', [
             '--ai' => 'boost',
             '--skills' => true,
-            '--fortify' => true,
+            '--auth-routes' => 'fortify',
             '--ssr' => true,
             '--actions' => true,
             '--quality' => true,
@@ -55,7 +59,7 @@ it('installs the selected presets non-interactively', function () {
             ->and($basePath.'/app/Dto/.gitkeep')->toBeFile()
             ->and($basePath.'/config/axiom.php')->toBeFile()
             ->and($basePath.'/app/Providers/AxiomServiceProvider.php')->toBeFile()
-            ->and($composer['require'])->toHaveKey('laravel/fortify')
+            ->and($composer['require']['laravel/fortify'])->toBe('^1.36.1')
             ->and($composer['scripts'])->toHaveKey('setup')
             ->and($composer['scripts'])->toHaveKey('dev')
             ->and($composer['scripts'])->toHaveKey('fix:rector')

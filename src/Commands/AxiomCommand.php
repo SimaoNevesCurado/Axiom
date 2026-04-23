@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use SimaoCurado\Axiom\Actions\InstallAxiomAction;
 use SimaoCurado\Axiom\Data\InstallSelections;
 use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Enums\AuthRoutesPreset;
 use SimaoCurado\Axiom\Enums\DebugToolPreset;
 
 use function Laravel\Prompts\confirm;
@@ -17,9 +18,10 @@ use function Laravel\Prompts\select;
 final class AxiomCommand extends Command
 {
     protected $signature = 'axiom:install
-        {--ai= : AI guideline preset (boost, codex, claude, none)}
+        {--ai= : AI guideline preset (boost, codex, claude, gemini, opencode, none)}
         {--skills : Install Axiom AI skills into .ai/skills}
-        {--fortify : Use Fortify in the project}
+        {--fortify : [Deprecated] Use Fortify routes when laravel/fortify exists}
+        {--auth-routes= : Auth routes mode (app, fortify)}
         {--ssr : Use SSR in frontend starter kits}
         {--actions : Install action-oriented architecture guidance}
         {--quality : Install quality and tooling guidance}
@@ -42,6 +44,11 @@ final class AxiomCommand extends Command
 
     public function handle(InstallAxiomAction $installAxiom): int
     {
+        $this->renderBanner();
+
+        $aiGuidelinePresets = $this->resolveAiGuidelinePresets();
+        $aiSkills = $this->resolveAiSkills();
+
         $installQualityGuidelines = $this->resolveToggle(
             option: 'quality',
             question: 'Install quality presets?',
@@ -51,12 +58,9 @@ final class AxiomCommand extends Command
         $frontendTools = $this->resolveFrontendTools();
 
         $selections = new InstallSelections(
-            aiGuidelines: $this->resolveAiGuidelines(),
-            installAiSkills: $this->resolveToggle(
-                option: 'skills',
-                question: 'Install AI skills?',
-            ),
-            installFortify: $this->resolveFortify(),
+            aiGuidelines: $aiGuidelinePresets[0] ?? AiGuidelinePreset::None,
+            installAiSkills: $aiSkills !== [],
+            authRoutes: $this->resolveAuthRoutes(),
             installSsr: $this->resolveSsr(),
             installArchitectureGuidelines: $this->resolveToggle(
                 option: 'actions',
@@ -69,7 +73,7 @@ final class AxiomCommand extends Command
             ),
             installComposerScripts: $this->resolveToggle(
                 option: 'scripts',
-                question: 'Add composer scripts?',
+                question: 'Add usefull composer commands',
             ),
             installPhpQualityDependencies: $phpTools['legacy_bundle'],
             installFrontendQualityDependencies: $frontendTools['legacy_bundle'],
@@ -84,6 +88,8 @@ final class AxiomCommand extends Command
             installNpmCheckUpdates: $frontendTools['ncu'],
             debugTool: $this->resolveDebugTool(),
             overwriteFiles: (bool) $this->option('force'),
+            aiGuidelinePresets: $aiGuidelinePresets,
+            aiSkills: $aiSkills,
         );
 
         $result = $installAxiom->handle($selections, base_path());
@@ -126,31 +132,109 @@ final class AxiomCommand extends Command
             $this->line('  • Run `bun install` if you still need to install frontend dependencies.');
         }
 
-        $this->line('  • Review `AGENTS.md` and `.ai/skills/*` if you installed AI guidance.');
+        $this->line('  • Review `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, and `.ai/skills/*` if you installed AI guidance.');
 
         return self::SUCCESS;
     }
 
-    private function resolveAiGuidelines(): AiGuidelinePreset
+    private function renderBanner(): void
+    {
+        if (! $this->input->isInteractive()) {
+            return;
+        }
+
+        $this->line("\033[34m");
+        $this->line(' █████╗ ██╗  ██╗██╗ ██████╗ ███╗   ███╗');
+        $this->line('██╔══██╗╚██╗██╔╝██║██╔═══██╗████╗ ████║');
+        $this->line('███████║ ╚███╔╝ ██║██║   ██║██╔████╔██║');
+        $this->line('██╔══██║ ██╔██╗ ██║██║   ██║██║╚██╔╝██║');
+        $this->line('██║  ██║██╔╝ ██╗██║╚██████╔╝██║ ╚═╝ ██║');
+        $this->line('╚═╝  ╚═╝╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝     ╚═╝');
+        $this->line("\033[0m");
+    }
+
+    /**
+     * @return list<AiGuidelinePreset>
+     */
+    private function resolveAiGuidelinePresets(): array
     {
         $option = $this->option('ai');
 
         if (is_string($option) && $option !== '') {
-            return AiGuidelinePreset::from($option);
+            return $this->parseAiPresetsOption($option);
         }
 
         if (! $this->input->isInteractive()) {
-            return AiGuidelinePreset::None;
+            return [];
         }
 
-        /** @var string $selection */
-        $selection = select(
-            label: 'Choose an AI preset',
-            options: AiGuidelinePreset::labels(),
-            default: AiGuidelinePreset::Boost->value,
+        $installAiPresets = confirm(
+            label: 'Install AI presets?',
+            default: true,
         );
 
-        return AiGuidelinePreset::from($selection);
+        if (! $installAiPresets) {
+            return [];
+        }
+
+        /** @var list<string> $selection */
+        $selection = multiselect(
+            label: 'Choose an AI preset',
+            options: [
+                AiGuidelinePreset::Boost->value => 'Boost preset (AGENTS.md)',
+                AiGuidelinePreset::Codex->value => 'Codex preset (AGENTS.md)',
+                AiGuidelinePreset::Claude->value => 'Claude preset (CLAUDE.md)',
+                AiGuidelinePreset::Gemini->value => 'Gemini preset (GEMINI.md)',
+                AiGuidelinePreset::Opencode->value => 'Opencode preset (OPENCODE.md)',
+            ],
+            default: [AiGuidelinePreset::Boost->value],
+            scroll: 6,
+            hint: 'Use the space bar to select one or more presets.',
+        );
+
+        if ($selection === []) {
+            return [];
+        }
+
+        $presets = array_map(
+            static fn (string $value): AiGuidelinePreset => AiGuidelinePreset::from($value),
+            $selection,
+        );
+
+        $unique = [];
+
+        foreach ($presets as $preset) {
+            if (! in_array($preset, $unique, true)) {
+                $unique[] = $preset;
+            }
+        }
+
+        return $unique;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function resolveAiSkills(): array
+    {
+        if ((bool) $this->option('skills')) {
+            return ['actions', 'dto', 'enum', 'crud', 'quality'];
+        }
+
+        if (! $this->input->isInteractive()) {
+            return [];
+        }
+
+        $installAiSkills = confirm(
+            label: 'Install AI skills?',
+            default: true,
+        );
+
+        if (! $installAiSkills) {
+            return [];
+        }
+
+        return ['actions', 'dto', 'enum', 'crud', 'quality'];
     }
 
     private function resolveToggle(string $option, string $question): bool
@@ -167,15 +251,6 @@ final class AxiomCommand extends Command
             label: $question,
             default: true,
         );
-    }
-
-    private function resolveFrontendToggle(string $option, string $question): bool
-    {
-        if (! file_exists(base_path('package.json'))) {
-            return false;
-        }
-
-        return $this->resolveToggle($option, $question);
     }
 
     private function resolveSsr(): bool
@@ -195,21 +270,52 @@ final class AxiomCommand extends Command
         );
     }
 
-    private function resolveFortify(): bool
+    private function resolveAuthRoutes(): AuthRoutesPreset
     {
+        $fortifyInstalled = $this->hasFortifyInstalled();
+        $option = $this->option('auth-routes');
+
+        if (is_string($option) && $option !== '') {
+            $preset = AuthRoutesPreset::from($option);
+
+            if ($preset === AuthRoutesPreset::Fortify && ! $fortifyInstalled) {
+                $this->components->warn('Skipping Fortify routes because laravel/fortify is not present in composer.json.');
+
+                return AuthRoutesPreset::AppManaged;
+            }
+
+            return $preset;
+        }
+
         if ((bool) $this->option('fortify')) {
-            return true;
+            if (! $fortifyInstalled) {
+                $this->components->warn('Skipping Fortify routes because laravel/fortify is not present in composer.json.');
+
+                return AuthRoutesPreset::AppManaged;
+            }
+
+            return AuthRoutesPreset::Fortify;
         }
 
         if (! $this->input->isInteractive()) {
-            return false;
+            return AuthRoutesPreset::AppManaged;
         }
 
-        return confirm(
-            label: 'Use Fortify?',
-            default: $this->hasFortifyInstalled(),
-            hint: 'If enabled, Axiom keeps laravel/fortify in composer.json.',
+        if (! $fortifyInstalled) {
+            return AuthRoutesPreset::AppManaged;
+        }
+
+        /** @var string $selection */
+        $selection = select(
+            label: 'Choose auth routes mode',
+            options: AuthRoutesPreset::labels(),
+            default: $this->hasFortifyProviderRegistered()
+                ? AuthRoutesPreset::Fortify->value
+                : AuthRoutesPreset::AppManaged->value,
+            hint: 'Fortify mode uses package routes. App managed mode keeps auth routes in routes/web.php.',
         );
+
+        return AuthRoutesPreset::from($selection);
     }
 
     private function hasSsrEntrypoint(): bool
@@ -246,6 +352,20 @@ final class AxiomCommand extends Command
         }
 
         return isset($composer['require']['laravel/fortify']);
+    }
+
+    private function hasFortifyProviderRegistered(): bool
+    {
+        $providersPath = base_path('bootstrap/providers.php');
+
+        if (! file_exists($providersPath)) {
+            return false;
+        }
+
+        return str_contains(
+            (string) file_get_contents($providersPath),
+            'App\\Providers\\FortifyServiceProvider::class',
+        );
     }
 
     private function resolveDebugTool(): DebugToolPreset
@@ -363,25 +483,11 @@ final class AxiomCommand extends Command
                 return $resolved;
             }
 
-            /** @var list<string> $selected */
-            $selected = multiselect(
-                label: 'Choose frontend tools',
-                options: [
-                    'oxlint' => 'Oxlint',
-                    'prettier' => 'Prettier',
-                    'concurrently' => 'concurrently',
-                    'ncu' => 'npm-check-updates',
-                ],
-                default: ['oxlint', 'prettier', 'concurrently', 'ncu'],
-                scroll: 8,
-                hint: 'Use the space bar to select tools.',
-            );
-
-            $resolved['oxlint'] = in_array('oxlint', $selected, true);
-            $resolved['prettier'] = in_array('prettier', $selected, true);
-            $resolved['concurrently'] = in_array('concurrently', $selected, true);
-            $resolved['ncu'] = in_array('ncu', $selected, true);
-            $resolved['legacy_bundle'] = false;
+            $resolved['legacy_bundle'] = true;
+            $resolved['oxlint'] = true;
+            $resolved['prettier'] = true;
+            $resolved['concurrently'] = true;
+            $resolved['ncu'] = true;
         }
 
         return $resolved;
@@ -403,5 +509,44 @@ final class AxiomCommand extends Command
             || (bool) $this->option('prettier')
             || (bool) $this->option('concurrently')
             || (bool) $this->option('ncu');
+    }
+
+    /**
+     * @return list<AiGuidelinePreset>
+     */
+    private function parseAiPresetsOption(string $option): array
+    {
+        $values = array_values(
+            array_filter(
+                array_map(static fn (string $value): string => trim($value), explode(',', $option)),
+                static fn (string $value): bool => $value !== '',
+            ),
+        );
+
+        if ($values === []) {
+            return [];
+        }
+
+        $presets = array_map(
+            static fn (string $value): AiGuidelinePreset => AiGuidelinePreset::from($value),
+            $values,
+        );
+
+        $filtered = array_values(
+            array_filter(
+                $presets,
+                static fn (AiGuidelinePreset $preset): bool => $preset !== AiGuidelinePreset::None,
+            ),
+        );
+
+        $unique = [];
+
+        foreach ($filtered as $preset) {
+            if (! in_array($preset, $unique, true)) {
+                $unique[] = $preset;
+            }
+        }
+
+        return $unique;
     }
 }

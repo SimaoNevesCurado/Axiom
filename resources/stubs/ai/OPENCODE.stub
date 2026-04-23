@@ -1,0 +1,32 @@
+# Axiom Opencode Guidelines
+
+This project follows Axiom conventions.
+
+## App Actions
+
+- Keep business logic in focused Action classes under `app/Actions`.
+- Use clear action names and a single public `handle()` method.
+- Inject dependencies through constructor promoted properties.
+- Create actions with `php artisan make:action "{name}" --no-interaction`.
+
+## Architecture
+
+- Prefer DTOs for boundaries and structured data transfer.
+- Keep controllers lightweight and delegate logic to actions.
+- Reuse existing structure before adding new patterns.
+
+## PHP And Code Health
+
+- Use `declare(strict_types=1);`.
+- Prefer explicit parameter, property, and return types.
+- Prefer `final` and `readonly` where appropriate.
+- Keep code static-analysis-friendly and easy to maintain.
+- Never leave debug calls in committed code.
+
+## Testing
+
+- Ensure behavior changes are covered by tests.
+
+## Skills
+
+- Follow the focused guidance in `.ai/skills/` when available.

@@ -5,14 +5,19 @@ declare(strict_types=1);
 namespace SimaoCurado\Axiom\Data;
 
 use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Enums\AuthRoutesPreset;
 use SimaoCurado\Axiom\Enums\DebugToolPreset;
 
 final readonly class InstallSelections
 {
+    /**
+     * @param  list<AiGuidelinePreset>  $aiGuidelinePresets
+     * @param  list<string>  $aiSkills
+     */
     public function __construct(
         public AiGuidelinePreset $aiGuidelines,
         public bool $installAiSkills,
-        public bool $installFortify,
+        public AuthRoutesPreset $authRoutes,
         public bool $installSsr,
         public bool $installArchitectureGuidelines,
         public bool $installQualityGuidelines,
@@ -31,5 +36,7 @@ final readonly class InstallSelections
         public bool $installNpmCheckUpdates = false,
         public DebugToolPreset $debugTool = DebugToolPreset::None,
         public bool $overwriteFiles = false,
+        public array $aiGuidelinePresets = [],
+        public array $aiSkills = [],
     ) {}
 }

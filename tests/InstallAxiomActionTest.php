@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use SimaoCurado\Axiom\Actions\InstallAxiomAction;
 use SimaoCurado\Axiom\Data\InstallSelections;
 use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
+use SimaoCurado\Axiom\Enums\AuthRoutesPreset;
 use SimaoCurado\Axiom\Enums\DebugToolPreset;
 
 it('does not overwrite existing files without force', function () {
@@ -30,7 +31,7 @@ it('does not overwrite existing files without force', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::Boost,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -44,7 +45,7 @@ it('does not overwrite existing files without force', function () {
         );
 
         expect($result->written)->toBe([])
-            ->and($result->skipped)->toBe(['AGENTS.md'])
+            ->and($result->skipped)->toBe(['AGENTS.md', 'app/Providers/FortifyServiceProvider.php'])
             ->and(file_get_contents($basePath.'/AGENTS.md'))->toBe('existing');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
@@ -68,7 +69,7 @@ it('writes claude guidelines to a claude file', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::Claude,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -84,6 +85,86 @@ it('writes claude guidelines to a claude file', function () {
         expect($result->written)->toBe(['CLAUDE.md'])
             ->and($basePath.'/CLAUDE.md')->toBeFile()
             ->and(file_get_contents($basePath.'/CLAUDE.md'))->toContain('Axiom Claude Guidelines');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('writes multiple AI guideline files when multiple presets are selected', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                installPhpQualityDependencies: false,
+                installFrontendQualityDependencies: false,
+                overwriteFiles: true,
+                aiGuidelinePresets: [AiGuidelinePreset::Codex, AiGuidelinePreset::Claude],
+            ),
+            $basePath,
+        );
+
+        expect($result->written)->toContain('AGENTS.md')
+            ->toContain('CLAUDE.md')
+            ->and($basePath.'/AGENTS.md')->toBeFile()
+            ->and($basePath.'/CLAUDE.md')->toBeFile();
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('writes gemini and opencode guideline files when selected', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                installPhpQualityDependencies: false,
+                installFrontendQualityDependencies: false,
+                overwriteFiles: true,
+                aiGuidelinePresets: [AiGuidelinePreset::Gemini, AiGuidelinePreset::Opencode],
+            ),
+            $basePath,
+        );
+
+        expect($result->written)->toContain('GEMINI.md')
+            ->toContain('OPENCODE.md')
+            ->and($basePath.'/GEMINI.md')->toBeFile()
+            ->and($basePath.'/OPENCODE.md')->toBeFile();
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
@@ -106,7 +187,7 @@ it('creates actions and dto folders when architecture is enabled', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: true,
                 installQualityGuidelines: false,
@@ -152,7 +233,7 @@ it('adds recommended composer scripts to the host project', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -209,7 +290,7 @@ it('adds backend-only composer scripts when the host project has no frontend pac
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -257,7 +338,7 @@ it('publishes ai skills when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: true,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -285,6 +366,49 @@ it('publishes ai skills when requested', function () {
     }
 });
 
+it('publishes only selected ai skills when requested', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: true,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                installPhpQualityDependencies: false,
+                installFrontendQualityDependencies: false,
+                overwriteFiles: true,
+                aiSkills: ['actions', 'quality'],
+            ),
+            $basePath,
+        );
+
+        expect($result->written)->toContain('.ai/skills/actions.md')
+            ->toContain('.ai/skills/quality.md')
+            ->not->toContain('.ai/skills/dto.md')
+            ->and($basePath.'/.ai/skills/actions.md')->toBeFile()
+            ->and($basePath.'/.ai/skills/quality.md')->toBeFile()
+            ->and($basePath.'/.ai/skills/dto.md')->not->toBeFile()
+            ->and($basePath.'/.ai/skills/crud.md')->not->toBeFile();
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 it('publishes quality preset files and strict provider defaults', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
@@ -302,7 +426,7 @@ it('publishes quality preset files and strict provider defaults', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: true,
@@ -360,7 +484,7 @@ it('adds php quality dependencies to composer json when requested', function () 
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -403,7 +527,7 @@ it('adds only selected php tooling and debugbar when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -454,7 +578,7 @@ it('adds frontend quality dependencies to package json when requested', function
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -500,7 +624,7 @@ it('adds only selected frontend tooling when requested', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -546,7 +670,7 @@ it('adds the SSR process to the dev script when SSR is enabled', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: true,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -569,7 +693,7 @@ it('adds the SSR process to the dev script when SSR is enabled', function () {
     }
 });
 
-it('adds fortify to composer require when enabled', function () {
+it('does not mutate composer require when fortify routes are enabled', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
@@ -589,7 +713,7 @@ it('adds fortify to composer require when enabled', function () {
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: true,
+                authRoutes: AuthRoutesPreset::Fortify,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -603,14 +727,13 @@ it('adds fortify to composer require when enabled', function () {
         /** @var array<string, mixed> $composer */
         $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
 
-        expect($composer['require'])->toHaveKey('laravel/fortify')
-            ->and($composer['require']['laravel/fortify'])->toBe('^1.36.1');
+        expect($composer['require'])->not->toHaveKey('laravel/fortify');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
 });
 
-it('removes fortify from composer require and bootstrap providers when disabled', function () {
+it('adds Fortify ignoreRoutes in app managed mode', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
@@ -623,6 +746,22 @@ it('removes fortify from composer require and bootstrap providers when disabled'
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
     mkdir($basePath.'/bootstrap', 0777, true);
     file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n    App\\Providers\\FortifyServiceProvider::class,\n];\n");
+    mkdir($basePath.'/app/Providers', 0777, true);
+    file_put_contents($basePath.'/app/Providers/FortifyServiceProvider.php', <<<'PHP'
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class FortifyServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        //
+    }
+}
+PHP);
 
     $action = new InstallAxiomAction(new Filesystem);
 
@@ -631,7 +770,7 @@ it('removes fortify from composer require and bootstrap providers when disabled'
             new InstallSelections(
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
-                installFortify: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -645,9 +784,12 @@ it('removes fortify from composer require and bootstrap providers when disabled'
         /** @var array<string, mixed> $composer */
         $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
         $providers = (string) file_get_contents($basePath.'/bootstrap/providers.php');
+        $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
 
-        expect($composer['require'])->not->toHaveKey('laravel/fortify')
-            ->and($providers)->not->toContain('App\\Providers\\FortifyServiceProvider::class');
+        expect($composer['require'])->toHaveKey('laravel/fortify')
+            ->and($providers)->toContain('App\\Providers\\FortifyServiceProvider::class')
+            ->and($fortifyProvider)->toContain('use Laravel\\Fortify\\Fortify;')
+            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
