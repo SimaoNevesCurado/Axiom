@@ -760,7 +760,7 @@ final readonly class InstallAxiomAction
             ['name' => 'password.request', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'forgot-password', 'code' => "Route::get('forgot-password', [UserEmailResetNotificationController::class, 'create'])\n    ->name('password.request');"],
             ['name' => 'password.email', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'forgot-password', 'code' => "Route::post('forgot-password', [UserEmailResetNotificationController::class, 'store'])\n    ->name('password.email');"],
             ['name' => 'password.reset', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'reset-password/{token}', 'code' => "Route::get('reset-password/{token}', [UserPasswordController::class, 'create'])\n    ->name('password.reset');"],
-            ['name' => 'password.store', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'reset-password', 'code' => "Route::post('reset-password', [UserPasswordController::class, 'store'])\n    ->name('password.store');"],
+            ['name' => 'password.update', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'reset-password', 'code' => "Route::post('reset-password', [UserPasswordController::class, 'store'])\n    ->name('password.update');"],
             ['name' => 'verification.notice', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'verify-email', 'code' => "Route::get('verify-email', [UserEmailVerificationNotificationController::class, 'create'])\n    ->name('verification.notice');"],
             ['name' => 'verification.send', 'middleware' => 'auth', 'method' => 'post', 'uri' => 'email/verification-notification', 'code' => "Route::post('email/verification-notification', [UserEmailVerificationNotificationController::class, 'store'])\n    ->middleware('throttle:6,1')\n    ->name('verification.send');"],
             ['name' => 'verification.verify', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'verify-email/{id}/{hash}', 'code' => "Route::get('verify-email/{id}/{hash}', [UserEmailVerificationController::class, 'update'])\n    ->middleware(['signed', 'throttle:6,1'])\n    ->name('verification.verify');"],
@@ -778,7 +778,7 @@ final readonly class InstallAxiomAction
             ['name' => 'two-factor.login', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'two-factor-challenge', 'code' => "Route::get('two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'create'])\n    ->name('two-factor.login');"],
             ['name' => 'two-factor.login.store', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'two-factor-challenge', 'code' => "Route::post('two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'store'])\n    ->name('two-factor.login.store');"],
             ['name' => 'password.confirm', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'confirm-password', 'code' => "Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])\n    ->name('password.confirm');"],
-            ['name' => 'password.confirmation', 'middleware' => 'auth', 'method' => 'post', 'uri' => 'confirm-password', 'code' => "Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])\n    ->name('password.confirmation');"],
+            ['name' => 'password.confirm.store', 'middleware' => 'auth', 'method' => 'post', 'uri' => 'confirm-password', 'code' => "Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])\n    ->name('password.confirm.store');"],
         ];
     }
 

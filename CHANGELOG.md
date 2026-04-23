@@ -2,6 +2,12 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.6 - 2026-04-23
+
+- align app-managed reset-password route naming with Fortify conventions by using `password.update`
+- align compatibility confirm-password POST naming with starter-kit conventions by using `password.confirm.store`
+- keep route merge behavior compatible with Wayfinder route module paths used by auth pages
+
 ## 0.3.5 - 2026-04-23
 
 - move `Fortify::ignoreRoutes();` injection to `FortifyServiceProvider::register()` so Fortify package routes are disabled before route registration

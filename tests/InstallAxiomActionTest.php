@@ -1119,7 +1119,7 @@ Route::middleware('guest')->group(function (): void {
     Route::get('forgot-password', fn (): string => 'ok')->name('password.request');
     Route::post('forgot-password', fn (): string => 'ok')->name('password.email');
     Route::get('reset-password/{token}', fn (): string => 'ok')->name('password.reset');
-    Route::post('reset-password', fn (): string => 'ok')->name('password.store');
+    Route::post('reset-password', fn (): string => 'ok')->name('password.update');
     Route::get('two-factor-challenge', fn (): string => 'ok')->name('two-factor.login');
     Route::post('two-factor-challenge', fn (): string => 'ok')->name('two-factor.login.store');
 });
@@ -1131,7 +1131,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('verify-email/{id}/{hash}', fn (): string => 'ok')->name('verification.verify');
     Route::get('settings/two-factor', fn (): string => 'ok')->name('two-factor.show');
     Route::get('confirm-password', fn (): string => 'ok')->name('password.confirm');
-    Route::post('confirm-password', fn (): string => 'ok')->name('password.confirmation');
+    Route::post('confirm-password', fn (): string => 'ok')->name('password.confirm.store');
 });
 PHP);
 
@@ -1209,7 +1209,7 @@ Route::middleware('guest')->group(function (): void {
     Route::get('forgot-password', fn (): string => 'ok')->name('password.request');
     Route::post('forgot-password', fn (): string => 'ok')->name('password.email');
     Route::get('reset-password/{token}', fn (): string => 'ok')->name('password.reset');
-    Route::post('reset-password', fn (): string => 'ok')->name('password.store');
+    Route::post('reset-password', fn (): string => 'ok')->name('password.update');
     Route::get('two-factor-challenge', fn (): string => 'ok')->name('two-factor.login');
     Route::post('two-factor-challenge', fn (): string => 'ok')->name('two-factor.login.store');
 });
@@ -1221,7 +1221,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('verify-email/{id}/{hash}', fn (): string => 'ok')->name('verification.verify');
     Route::get('settings/two-factor', fn (): string => 'ok')->name('two-factor.show');
     Route::get('confirm-password', fn (): string => 'ok')->name('password.confirm');
-    Route::post('confirm-password', fn (): string => 'ok')->name('password.confirmation');
+    Route::post('confirm-password', fn (): string => 'ok')->name('password.confirm.store');
 });
 PHP);
 
