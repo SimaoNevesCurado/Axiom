@@ -38,5 +38,6 @@ final readonly class InstallSelections
         public bool $overwriteFiles = false,
         public array $aiGuidelinePresets = [],
         public array $aiSkills = [],
+        public bool $forceAppRoutes = false,
     ) {}
 }

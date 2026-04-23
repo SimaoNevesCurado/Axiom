@@ -178,7 +178,10 @@ final readonly class InstallAxiomAction
         }
 
         if ($selections->authRoutes === AuthRoutesPreset::AppManaged) {
-            $fallbackToFortifyRoutes = $this->shouldFallbackToFortifyRoutes($basePath);
+            $fallbackToFortifyRoutes = $this->shouldFallbackToFortifyRoutes(
+                basePath: $basePath,
+                forceAppRoutes: $selections->forceAppRoutes,
+            );
 
             $this->configureAppManagedAuthRoutes(
                 basePath: $basePath,
@@ -690,8 +693,12 @@ final readonly class InstallAxiomAction
         return array_key_exists('laravel/fortify', $composer['require']);
     }
 
-    private function shouldFallbackToFortifyRoutes(string $basePath): bool
+    private function shouldFallbackToFortifyRoutes(string $basePath, bool $forceAppRoutes): bool
     {
+        if ($forceAppRoutes) {
+            return false;
+        }
+
         if ($this->hasAppManagedAuthControllers($basePath)) {
             return false;
         }

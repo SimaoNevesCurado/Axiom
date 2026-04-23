@@ -1333,6 +1333,76 @@ PHP);
     }
 });
 
+it('allows forcing app-managed routes even when starter fallback conditions are met', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+            'laravel/fortify' => '^1.36.1',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n    App\\Providers\\FortifyServiceProvider::class,\n];\n");
+    mkdir($basePath.'/resources/js/pages/auth', 0777, true);
+    file_put_contents($basePath.'/resources/js/pages/auth/ConfirmPassword.vue', "<template />\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\n");
+    mkdir($basePath.'/app/Providers', 0777, true);
+    file_put_contents($basePath.'/app/Providers/FortifyServiceProvider.php', <<<'PHP'
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class FortifyServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        //
+    }
+
+    public function boot(): void
+    {
+        //
+    }
+}
+PHP);
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+                forceAppRoutes: true,
+            ),
+            $basePath,
+        );
+
+        $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
+        $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
+
+        expect($result->written)->toContain('routes/web.php')
+            ->toContain('app/Providers/FortifyServiceProvider.php')
+            ->and($webRoutes)->toContain('// Axiom app-managed auth routes...')
+            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 function deleteDirectoryForInstallActionTest(string $path): void
 {
     if (! is_dir($path)) {

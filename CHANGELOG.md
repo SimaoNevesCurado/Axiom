@@ -2,6 +2,12 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.8 - 2026-04-23
+
+- add `--force-app-routes` installer option to force app-managed auth route publishing in `routes/web.php`
+- bypass starter-kit Fortify fallback when `--force-app-routes` is enabled
+- add regression coverage ensuring forced mode writes app-managed routes and keeps `Fortify::ignoreRoutes();`
+
 ## 0.3.7 - 2026-04-23
 
 - add automatic fallback to Fortify-managed routes in starter-kit projects that include auth pages but lack app-managed auth controllers

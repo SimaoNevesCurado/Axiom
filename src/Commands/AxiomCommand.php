@@ -22,6 +22,7 @@ final class AxiomCommand extends Command
         {--skills : Install Axiom AI skills into .ai/skills}
         {--fortify : [Deprecated] Use Fortify routes when laravel/fortify exists}
         {--auth-routes= : Auth routes mode (app, fortify)}
+        {--force-app-routes : Force app-managed auth routes in web.php, even when starter-kit fallback would use Fortify package routes}
         {--ssr : Use SSR in frontend starter kits}
         {--actions : Install action-oriented architecture guidance}
         {--quality : Install quality and tooling guidance}
@@ -90,6 +91,7 @@ final class AxiomCommand extends Command
             overwriteFiles: (bool) $this->option('force'),
             aiGuidelinePresets: $aiGuidelinePresets,
             aiSkills: $aiSkills,
+            forceAppRoutes: (bool) $this->option('force-app-routes'),
         );
 
         $result = $installAxiom->handle($selections, base_path());
