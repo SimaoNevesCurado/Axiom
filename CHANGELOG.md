@@ -2,6 +2,22 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.0 - 2026-04-23
+
+- add a startup banner for interactive installs
+- support selecting multiple AI presets in `axiom:install`
+- add `Gemini` and `Opencode` AI preset options with dedicated guideline files
+- simplify AI skills flow to install all skills when enabled
+- keep frontend tooling behind a single `Install Bun frontend tooling?` prompt and install the full bundle when enabled
+- add `auth-routes` installer mode support and enum-backed auth route selection
+- update installer prompt copy for composer commands
+
+## 0.2.9 - 2026-04-06
+
+- add a `Choose auth routes mode` installer prompt when `laravel/fortify` is installed
+- avoid mutating `composer.json` requirements when switching auth route handling
+- update Fortify provider integration to support app-managed auth routes cleanly
+
 ## 0.2.8 - 2026-04-06
 
 - always show the `Use Server Side Rendering?` prompt in interactive installs
