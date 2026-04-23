@@ -2,6 +2,13 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.4 - 2026-04-23
+
+- clean previously generated Axiom auth route blocks from `routes/web.php` before reapplying route merge logic
+- rebuild app-managed and Fortify compatibility blocks from missing routes only after cleanup
+- keep `routes/web.php` unchanged when no Axiom route blocks are present
+- add regression coverage for projects that already contain stale Axiom route blocks plus external auth routes
+
 ## 0.3.3 - 2026-04-23
 
 - in app-managed auth mode, merge only missing auth routes instead of skipping the entire block

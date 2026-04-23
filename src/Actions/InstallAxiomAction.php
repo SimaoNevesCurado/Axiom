@@ -478,9 +478,9 @@ final readonly class InstallAxiomAction
         }
 
         $contents = (string) $this->files->get($routesPath);
-        $updated = $contents;
-        $hasChanges = false;
-        $routesContents = $this->routesContents($basePath);
+        $updated = $this->stripAxiomRouteBlocks($contents);
+        $hasChanges = $updated !== $contents;
+        $routesContents = $this->routesContents($basePath, $updated);
         $missingAppManagedRoutes = $this->missingRoutes(
             $routesContents,
             $this->appManagedRouteDefinitions(),
@@ -494,10 +494,11 @@ final readonly class InstallAxiomAction
                 $missingAppManagedRoutes,
             )."\n";
             $hasChanges = true;
+            $routesContents = $this->routesContents($basePath, $updated);
         }
 
         if ($hasFortify) {
-            $compatibility = $this->ensureFortifyCompatibilityRoutes($updated, $this->routesContents($basePath));
+            $compatibility = $this->ensureFortifyCompatibilityRoutes($updated, $routesContents);
 
             if ($compatibility['changed']) {
                 $updated = $compatibility['contents'];
@@ -637,7 +638,7 @@ final readonly class InstallAxiomAction
         return array_key_exists('laravel/fortify', $composer['require']);
     }
 
-    private function routesContents(string $basePath): string
+    private function routesContents(string $basePath, ?string $webRoutesOverride = null): string
     {
         $routesDirectory = $basePath.'/routes';
 
@@ -664,10 +665,53 @@ final readonly class InstallAxiomAction
                 continue;
             }
 
+            if ($webRoutesOverride !== null && $file->getFilename() === 'web.php') {
+                $contents[] = $webRoutesOverride;
+
+                continue;
+            }
+
             $contents[] = (string) $this->files->get($path);
         }
 
         return implode("\n\n", $contents);
+    }
+
+    private function stripAxiomRouteBlocks(string $contents): string
+    {
+        if (! str_contains($contents, 'Axiom app-managed auth routes') && ! str_contains($contents, 'Axiom Fortify compatibility routes')) {
+            return $contents;
+        }
+
+        $updated = preg_replace(
+            '/\n?\/\/ Axiom app-managed auth routes\.\.\.[\s\S]*?(?=\n\/\/ Axiom Fortify compatibility routes\.\.\.|\z)/',
+            "\n",
+            $contents,
+            1,
+        );
+
+        if ($updated === null) {
+            $updated = $contents;
+        }
+
+        $updatedWithCompatibilityRemoved = preg_replace(
+            '/\n?\/\/ Axiom Fortify compatibility routes\.\.\.[\s\S]*$/',
+            "\n",
+            $updated,
+            1,
+        );
+
+        if ($updatedWithCompatibilityRemoved === null) {
+            $updatedWithCompatibilityRemoved = $updated;
+        }
+
+        $normalized = preg_replace("/\n{3,}/", "\n\n", $updatedWithCompatibilityRemoved);
+
+        if ($normalized === null) {
+            return $updatedWithCompatibilityRemoved;
+        }
+
+        return rtrim($normalized)."\n";
     }
 
     private function hasNamedRoute(string $contents, string $name): bool

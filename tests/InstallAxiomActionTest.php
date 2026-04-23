@@ -1093,6 +1093,96 @@ PHP);
     }
 });
 
+it('cleans previously generated axiom route blocks when equivalent routes already exist outside web.php', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+            'laravel/fortify' => '^1.36.1',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+require __DIR__.'/auth.php';
+
+// Axiom app-managed auth routes...
+Route::middleware('auth')->group(function (): void {
+    Route::get('verify-email', fn (): string => 'old')->name('verification.notice');
+    Route::get('verify-email/{id}/{hash}', fn (): string => 'old')->name('verification.verify');
+});
+
+// Axiom Fortify compatibility routes...
+Route::middleware('auth')->group(function (): void {
+    Route::get('confirm-password', fn (): string => 'old')->name('password.confirm');
+});
+PHP);
+    file_put_contents($basePath.'/routes/auth.php', <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Support\Facades\Route;
+
+Route::middleware('guest')->group(function (): void {
+    Route::get('login', fn (): string => 'ok')->name('login');
+    Route::post('login', fn (): string => 'ok')->name('login.store');
+    Route::get('register', fn (): string => 'ok')->name('register');
+    Route::post('register', fn (): string => 'ok')->name('register.store');
+    Route::get('forgot-password', fn (): string => 'ok')->name('password.request');
+    Route::post('forgot-password', fn (): string => 'ok')->name('password.email');
+    Route::get('reset-password/{token}', fn (): string => 'ok')->name('password.reset');
+    Route::post('reset-password', fn (): string => 'ok')->name('password.store');
+    Route::get('two-factor-challenge', fn (): string => 'ok')->name('two-factor.login');
+    Route::post('two-factor-challenge', fn (): string => 'ok')->name('two-factor.login.store');
+});
+
+Route::middleware('auth')->group(function (): void {
+    Route::post('logout', fn (): string => 'ok')->name('logout');
+    Route::get('verify-email', fn (): string => 'ok')->name('verification.notice');
+    Route::post('email/verification-notification', fn (): string => 'ok')->name('verification.send');
+    Route::get('verify-email/{id}/{hash}', fn (): string => 'ok')->name('verification.verify');
+    Route::get('settings/two-factor', fn (): string => 'ok')->name('two-factor.show');
+    Route::get('confirm-password', fn (): string => 'ok')->name('password.confirm');
+    Route::post('confirm-password', fn (): string => 'ok')->name('password.confirmation');
+});
+PHP);
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
+
+        expect($result->written)->toContain('routes/web.php')
+            ->and($webRoutes)->toContain("require __DIR__.'/auth.php';")
+            ->and($webRoutes)->not->toContain('// Axiom app-managed auth routes...')
+            ->and($webRoutes)->not->toContain('// Axiom Fortify compatibility routes...');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 function deleteDirectoryForInstallActionTest(string $path): void
 {
     if (! is_dir($path)) {
