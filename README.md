@@ -72,7 +72,7 @@ The installer can:
 - support non-interactive auth scaffold installation with `--install-auth`
 - when auth scaffold is installed and `laravel/fortify` is missing, add it to `composer.json` and register/create `App\Providers\FortifyServiceProvider`
 - when auth scaffold is installed in app-managed mode, add `Fortify::ignoreRoutes();` to `App\Providers\FortifyServiceProvider`
-- auth scaffold now publishes starter-kit auth building blocks (Fortify config, auth Actions, FormRequests, Rules, and Vue login/register pages)
+- auth scaffold now publishes starter-kit auth building blocks (Fortify config, auth Actions, FormRequests, Rules, and portable Vue login/register pages)
 - when auth scaffold is installed in app-managed mode, add auth routes to `routes/web.php` and create base auth controllers
 - ask whether the project should use SSR and wire that into `composer dev`
 - create `app/Actions` and `app/Dto`

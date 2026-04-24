@@ -1563,12 +1563,21 @@ it('publishes starter-kit auth actions, requests and pages when installing auth 
             $basePath,
         );
 
+        $loginPage = (string) file_get_contents($basePath.'/resources/js/pages/session/Create.vue');
+        $registerPage = (string) file_get_contents($basePath.'/resources/js/pages/user/Create.vue');
+
         expect($result->written)->toContain('config/fortify.php')
             ->toContain('app/Actions/CreateUser.php')
             ->toContain('app/Http/Requests/CreateSessionRequest.php')
             ->toContain('app/Rules/ValidEmail.php')
             ->toContain('resources/js/pages/session/Create.vue')
-            ->toContain('resources/js/pages/user/Create.vue');
+            ->toContain('resources/js/pages/user/Create.vue')
+            ->and($loginPage)->toContain("v-bind=\"store.form()\"")
+            ->and($loginPage)->toContain("import { store } from '@/routes/login';")
+            ->and($loginPage)->not->toContain("from '@/components/")
+            ->and($registerPage)->toContain("v-bind=\"store.form()\"")
+            ->and($registerPage)->toContain("import { store } from '@/routes/register';")
+            ->and($registerPage)->not->toContain("from '@/components/");
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }

@@ -26,7 +26,7 @@ final readonly class SessionController
     {
         $user = $request->validateCredentials();
 
-        if ($user->hasEnabledTwoFactorAuthentication()) {
+        if (method_exists($user, 'hasEnabledTwoFactorAuthentication') && $user->hasEnabledTwoFactorAuthentication()) {
             $request->session()->put([
                 'login.id' => $user->getKey(),
                 'login.remember' => $request->boolean('remember'),

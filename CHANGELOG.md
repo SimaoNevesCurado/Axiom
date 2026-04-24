@@ -2,6 +2,13 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.12 - 2026-04-24
+
+- make generated auth Vue login/register pages portable by removing starter-kit-specific UI component imports
+- keep Wayfinder-based auth form wiring while using framework-agnostic HTML controls in generated pages
+- guard two-factor login check in generated `SessionController` with `method_exists` to avoid runtime errors when the user model does not yet expose Fortify helpers
+- add regression coverage for portable auth page generation without `@/components/*` dependencies
+
 ## 0.3.11 - 2026-04-24
 
 - expand auth scaffold detection to cover starter-kit auth patterns (including existing login routes and session/auth page directories)
