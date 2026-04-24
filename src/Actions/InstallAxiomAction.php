@@ -1114,9 +1114,15 @@ final readonly class InstallAxiomAction
         array &$written,
         array &$skipped,
     ): void {
+        $useStarterKitPages = $this->hasStarterKitAuthUiComponents($basePath);
+
         $pages = [
-            'session/Create.vue' => 'auth/pages/session/Create.vue.stub',
-            'user/Create.vue' => 'auth/pages/user/Create.vue.stub',
+            'session/Create.vue' => $useStarterKitPages
+                ? 'auth/pages/session/Create.vue.stub'
+                : 'auth/pages/session/Create.portable.vue.stub',
+            'user/Create.vue' => $useStarterKitPages
+                ? 'auth/pages/user/Create.vue.stub'
+                : 'auth/pages/user/Create.portable.vue.stub',
         ];
 
         foreach ($pages as $page => $stub) {
@@ -1129,6 +1135,28 @@ final readonly class InstallAxiomAction
                 basePath: $basePath,
             );
         }
+    }
+
+    private function hasStarterKitAuthUiComponents(string $basePath): bool
+    {
+        $requiredPaths = [
+            $basePath.'/resources/js/components/InputError.vue',
+            $basePath.'/resources/js/components/TextLink.vue',
+            $basePath.'/resources/js/layouts/AuthLayout.vue',
+            $basePath.'/resources/js/components/ui/button',
+            $basePath.'/resources/js/components/ui/checkbox',
+            $basePath.'/resources/js/components/ui/input',
+            $basePath.'/resources/js/components/ui/label',
+            $basePath.'/resources/js/components/ui/spinner',
+        ];
+
+        foreach ($requiredPaths as $path) {
+            if (! $this->files->exists($path) && ! $this->files->isDirectory($path)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

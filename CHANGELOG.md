@@ -2,6 +2,12 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.14 - 2026-04-24
+
+- choose auth page stubs dynamically during install: use starter-kit-vue pages when starter UI components exist, otherwise use portable Vue auth pages
+- keep controllers/actions/requests aligned with starter-kit auth flow while avoiding frontend build failures in projects without shadcn-vue UI files
+- add regression coverage for both auth page modes (starter UI present vs absent)
+
 ## 0.3.13 - 2026-04-24
 
 - align auth stubs exactly with `starter-kit-vue` for `SessionController` and Vue login/register pages

@@ -1,0 +1,79 @@
+<script setup lang="ts">
+import { Form, Head } from '@inertiajs/vue3';
+import { register } from '@/routes';
+import { store } from '@/routes/login';
+import { request } from '@/routes/password';
+
+defineProps<{
+    status?: string;
+    canResetPassword: boolean;
+    canRegister: boolean;
+}>();
+</script>
+
+<template>
+    <Head title="Log in" />
+
+    <main class="mx-auto max-w-md p-6">
+        <h1 class="text-2xl font-semibold">Log in</h1>
+
+        <p v-if="status" class="mt-2 text-sm text-green-600">{{ status }}</p>
+
+        <Form
+            v-bind="store.form()"
+            :reset-on-success="['password']"
+            v-slot="{ errors, processing }"
+            class="mt-6 space-y-4"
+        >
+            <div>
+                <label for="email" class="mb-1 block text-sm font-medium">Email address</label>
+                <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    required
+                    autofocus
+                    autocomplete="email"
+                    class="w-full rounded border px-3 py-2"
+                    placeholder="email@example.com"
+                />
+                <p v-if="errors.email" class="mt-1 text-sm text-red-600">{{ errors.email }}</p>
+            </div>
+
+            <div>
+                <div class="mb-1 flex items-center justify-between">
+                    <label for="password" class="text-sm font-medium">Password</label>
+                    <a v-if="canResetPassword" :href="request().url" class="text-sm underline">Forgot password?</a>
+                </div>
+                <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    required
+                    autocomplete="current-password"
+                    class="w-full rounded border px-3 py-2"
+                />
+                <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password }}</p>
+            </div>
+
+            <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="remember" />
+                <span>Remember me</span>
+            </label>
+
+            <button
+                type="submit"
+                class="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+                :disabled="processing"
+                data-test="login-button"
+            >
+                {{ processing ? 'Loading...' : 'Log in' }}
+            </button>
+        </Form>
+
+        <p v-if="canRegister" class="mt-6 text-sm">
+            Don't have an account?
+            <a :href="register().url" class="underline">Sign up</a>
+        </p>
+    </main>
+</template>

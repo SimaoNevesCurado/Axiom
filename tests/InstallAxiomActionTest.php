@@ -1574,10 +1574,66 @@ it('publishes starter-kit auth actions, requests and pages when installing auth 
             ->toContain('resources/js/pages/user/Create.vue')
             ->and($loginPage)->toContain('v-bind="store.form()"')
             ->and($loginPage)->toContain("import { store } from '@/routes/login';")
-            ->and($loginPage)->toContain("import InputError from '@/components/InputError.vue';")
-            ->and($loginPage)->toContain("import AuthBase from '@/layouts/AuthLayout.vue';")
+            ->and($loginPage)->not->toContain("from '@/components/")
+            ->and($loginPage)->not->toContain("from '@/layouts/AuthLayout.vue';")
             ->and($registerPage)->toContain('v-bind="store.form()"')
             ->and($registerPage)->toContain("import { store } from '@/routes/register';")
+            ->and($registerPage)->not->toContain("from '@/components/")
+            ->and($registerPage)->not->toContain("from '@/layouts/AuthLayout.vue';");
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('uses starter-kit auth pages when starter UI dependencies are present', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\n");
+
+    mkdir($basePath.'/resources/js/components/ui/button', 0777, true);
+    mkdir($basePath.'/resources/js/components/ui/checkbox', 0777, true);
+    mkdir($basePath.'/resources/js/components/ui/input', 0777, true);
+    mkdir($basePath.'/resources/js/components/ui/label', 0777, true);
+    mkdir($basePath.'/resources/js/components/ui/spinner', 0777, true);
+    mkdir($basePath.'/resources/js/layouts', 0777, true);
+    file_put_contents($basePath.'/resources/js/components/InputError.vue', "<template />\n");
+    file_put_contents($basePath.'/resources/js/components/TextLink.vue', "<template />\n");
+    file_put_contents($basePath.'/resources/js/layouts/AuthLayout.vue', "<template><slot /></template>\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        $loginPage = (string) file_get_contents($basePath.'/resources/js/pages/session/Create.vue');
+        $registerPage = (string) file_get_contents($basePath.'/resources/js/pages/user/Create.vue');
+
+        expect($loginPage)->toContain("import InputError from '@/components/InputError.vue';")
+            ->and($loginPage)->toContain("import AuthBase from '@/layouts/AuthLayout.vue';")
             ->and($registerPage)->toContain("import InputError from '@/components/InputError.vue';")
             ->and($registerPage)->toContain("import AuthBase from '@/layouts/AuthLayout.vue';");
     } finally {

@@ -1,0 +1,91 @@
+<script setup lang="ts">
+import { Form, Head } from '@inertiajs/vue3';
+import { login } from '@/routes';
+import { store } from '@/routes/register';
+</script>
+
+<template>
+    <Head title="Register" />
+
+    <main class="mx-auto max-w-md p-6">
+        <h1 class="text-2xl font-semibold">Create an account</h1>
+
+        <Form
+            v-bind="store.form()"
+            :reset-on-success="['password', 'password_confirmation']"
+            v-slot="{ errors, processing }"
+            class="mt-6 space-y-4"
+        >
+            <div>
+                <label for="name" class="mb-1 block text-sm font-medium">Name</label>
+                <input
+                    id="name"
+                    type="text"
+                    name="name"
+                    required
+                    autofocus
+                    autocomplete="name"
+                    class="w-full rounded border px-3 py-2"
+                    placeholder="Full name"
+                />
+                <p v-if="errors.name" class="mt-1 text-sm text-red-600">{{ errors.name }}</p>
+            </div>
+
+            <div>
+                <label for="email" class="mb-1 block text-sm font-medium">Email address</label>
+                <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    required
+                    autocomplete="email"
+                    class="w-full rounded border px-3 py-2"
+                    placeholder="email@example.com"
+                />
+                <p v-if="errors.email" class="mt-1 text-sm text-red-600">{{ errors.email }}</p>
+            </div>
+
+            <div>
+                <label for="password" class="mb-1 block text-sm font-medium">Password</label>
+                <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    required
+                    autocomplete="new-password"
+                    class="w-full rounded border px-3 py-2"
+                />
+                <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password }}</p>
+            </div>
+
+            <div>
+                <label for="password_confirmation" class="mb-1 block text-sm font-medium">Confirm password</label>
+                <input
+                    id="password_confirmation"
+                    type="password"
+                    name="password_confirmation"
+                    required
+                    autocomplete="new-password"
+                    class="w-full rounded border px-3 py-2"
+                />
+                <p v-if="errors.password_confirmation" class="mt-1 text-sm text-red-600">
+                    {{ errors.password_confirmation }}
+                </p>
+            </div>
+
+            <button
+                type="submit"
+                class="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+                :disabled="processing"
+                data-test="register-user-button"
+            >
+                {{ processing ? 'Loading...' : 'Create account' }}
+            </button>
+        </Form>
+
+        <p class="mt-6 text-sm">
+            Already have an account?
+            <a :href="login().url" class="underline">Log in</a>
+        </p>
+    </main>
+</template>
