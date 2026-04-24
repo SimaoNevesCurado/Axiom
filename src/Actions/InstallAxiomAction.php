@@ -178,6 +178,12 @@ final readonly class InstallAxiomAction
         }
 
         if ($selections->authRoutes === AuthRoutesPreset::AppManaged && $selections->installAuthScaffold) {
+            $this->ensureFortifyForAppManagedAuthScaffold(
+                basePath: $basePath,
+                written: $written,
+                skipped: $skipped,
+            );
+
             $this->writeAuthControllers(
                 basePath: $basePath,
                 overwrite: $selections->overwriteFiles,
@@ -200,6 +206,75 @@ final readonly class InstallAxiomAction
         }
 
         return new InstallResult($written, $skipped);
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function ensureFortifyForAppManagedAuthScaffold(string $basePath, array &$written, array &$skipped): void
+    {
+        $composerPath = $basePath.'/composer.json';
+
+        if (! $this->files->exists($composerPath)) {
+            $this->appendUnique($skipped, 'composer.json');
+
+            return;
+        }
+
+        /** @var array<string, mixed>|null $composer */
+        $composer = json_decode((string) $this->files->get($composerPath), true);
+
+        if (! is_array($composer)) {
+            $this->appendUnique($skipped, 'composer.json');
+
+            return;
+        }
+
+        $composer['require'] ??= [];
+
+        if (! is_array($composer['require'])) {
+            $this->appendUnique($skipped, 'composer.json');
+
+            return;
+        }
+
+        $hasChanges = false;
+
+        if (! array_key_exists('laravel/fortify', $composer['require'])) {
+            $composer['require']['laravel/fortify'] = '^1.36.1';
+            $hasChanges = true;
+        }
+
+        if ($hasChanges) {
+            ksort($composer['require']);
+
+            $this->files->put(
+                $composerPath,
+                json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
+            );
+
+            $this->appendUnique($written, 'composer.json');
+        } else {
+            $this->appendUnique($skipped, 'composer.json');
+        }
+
+        $this->writeFile(
+            path: $basePath.'/app/Providers/FortifyServiceProvider.php',
+            content: $this->stub('auth/providers/FortifyServiceProvider.stub'),
+            overwrite: false,
+            written: $written,
+            skipped: $skipped,
+            basePath: $basePath,
+        );
+
+        $this->registerBootstrapProvider(
+            basePath: $basePath,
+            provider: 'App\\Providers\\FortifyServiceProvider::class',
+            overwrite: false,
+            written: $written,
+            skipped: $skipped,
+        );
     }
 
     /**

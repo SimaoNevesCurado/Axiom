@@ -401,8 +401,14 @@ final class AxiomCommand extends Command
     {
         $paths = [
             base_path('routes/auth.php'),
+            base_path('config/fortify.php'),
             base_path('app/Providers/FortifyServiceProvider.php'),
+            base_path('app/Http/Controllers/SessionController.php'),
+            base_path('app/Http/Controllers/UserController.php'),
             base_path('resources/js/pages/auth'),
+            base_path('resources/js/pages/session'),
+            base_path('resources/js/Pages/Auth'),
+            base_path('resources/js/Pages/Session'),
         ];
 
         foreach ($paths as $path) {
@@ -411,7 +417,18 @@ final class AxiomCommand extends Command
             }
         }
 
-        return false;
+        $webRoutesPath = base_path('routes/web.php');
+
+        if (! file_exists($webRoutesPath)) {
+            return false;
+        }
+
+        $webRoutes = (string) file_get_contents($webRoutesPath);
+
+        return str_contains($webRoutes, "->name('login')")
+            || str_contains($webRoutes, "->name('login.store')")
+            || str_contains($webRoutes, "->name('register')")
+            || str_contains($webRoutes, "->name('password.request')");
     }
 
     private function resolveDebugTool(): DebugToolPreset

@@ -2,6 +2,14 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.10 - 2026-04-24
+
+- expand auth scaffold detection to cover starter-kit auth patterns (including existing login routes and session/auth page directories)
+- align generated `SessionController` stub login flow with starter-kit-vue (`session/Create`, route-based password reset visibility)
+- remove direct `Laravel\Fortify\Features` dependency from generated login controller to avoid runtime errors in projects without Fortify
+- automatically add `laravel/fortify` and create/register `App\Providers\FortifyServiceProvider` when app-managed auth scaffold installation is requested on projects without Fortify
+- add regression coverage for login-route-based scaffold detection and Fortify-free auth controller generation
+
 ## 0.3.9 - 2026-04-23
 
 - simplify auth installer flow: when starter auth scaffold exists, leave auth untouched

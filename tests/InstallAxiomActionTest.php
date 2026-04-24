@@ -1434,6 +1434,101 @@ PHP);
     }
 });
 
+it('installs login scaffold without requiring Laravel Fortify classes in generated controllers', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        $sessionController = (string) file_get_contents($basePath.'/app/Http/Controllers/SessionController.php');
+
+        expect($result->written)->toContain('app/Http/Controllers/SessionController.php')
+            ->and($sessionController)->toContain("Inertia::render('session/Create'")
+            ->and($sessionController)->toContain("Route::has('password.request')")
+            ->and($sessionController)->not->toContain('Laravel\\Fortify\\Features');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('adds laravel fortify and registers FortifyServiceProvider when installing auth scaffold in projects without fortify', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        /** @var array<string, mixed> $composer */
+        $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
+        $providers = (string) file_get_contents($basePath.'/bootstrap/providers.php');
+        $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
+
+        expect($result->written)->toContain('composer.json')
+            ->toContain('bootstrap/providers.php')
+            ->toContain('app/Providers/FortifyServiceProvider.php')
+            ->and($composer['require'])->toHaveKey('laravel/fortify')
+            ->and($providers)->toContain('App\\Providers\\FortifyServiceProvider::class')
+            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 function deleteDirectoryForInstallActionTest(string $path): void
 {
     if (! is_dir($path)) {

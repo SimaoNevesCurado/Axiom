@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Str;
+use SimaoCurado\Axiom\Commands\AxiomCommand;
 
 it('installs the selected presets non-interactively', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
@@ -73,6 +74,37 @@ it('installs the selected presets non-interactively', function () {
             ->and($package['devDependencies'])->toHaveKey('oxlint')
             ->and($package['devDependencies'])->toHaveKey('concurrently')
             ->and($package['devDependencies'])->toHaveKey('prettier');
+    } finally {
+        app()->setBasePath($originalBasePath);
+        deleteDirectoryForInstallCommandTest($basePath);
+    }
+});
+
+it('detects auth scaffold when login routes already exist in routes/web.php', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+    $originalBasePath = base_path();
+
+    mkdir($basePath, 0777, true);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', <<<'PHP'
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+Route::middleware('guest')->group(function (): void {
+    Route::get('login', fn (): string => 'ok')->name('login');
+    Route::post('login', fn (): string => 'ok')->name('login.store');
+});
+PHP);
+
+    app()->setBasePath($basePath);
+
+    try {
+        $command = app(AxiomCommand::class);
+        $method = new ReflectionMethod($command, 'hasAuthScaffold');
+        $method->setAccessible(true);
+
+        expect($method->invoke($command))->toBeTrue();
     } finally {
         app()->setBasePath($originalBasePath);
         deleteDirectoryForInstallCommandTest($basePath);
