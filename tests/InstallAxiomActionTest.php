@@ -1576,7 +1576,7 @@ it('publishes starter-kit auth actions, requests and pages when installing auth 
             ->and($loginPage)->toContain("import { store } from '@/routes/login';")
             ->and($loginPage)->toContain("import InputError from '@/components/InputError.vue';")
             ->and($loginPage)->toContain("import AuthBase from '@/layouts/AuthLayout.vue';")
-            ->and($registerPage)->toContain("v-bind=\"store.form()\"")
+            ->and($registerPage)->toContain('v-bind="store.form()"')
             ->and($registerPage)->toContain("import { store } from '@/routes/register';")
             ->and($registerPage)->toContain("import InputError from '@/components/InputError.vue';")
             ->and($registerPage)->toContain("import AuthBase from '@/layouts/AuthLayout.vue';");
