@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\RedirectResponse;
 
-class UserEmailVerificationController extends Controller
+final readonly class UserEmailVerificationController
 {
-    public function update(EmailVerificationRequest $request)
+    public function update(EmailVerificationRequest $request, #[CurrentUser] User $user): RedirectResponse
     {
-        if (! $request->user()?->hasVerifiedEmail()) {
-            $request->fulfill();
+        if ($user->hasVerifiedEmail()) {
+            return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
         }
 
-        return redirect()->intended(config('fortify.home', '/dashboard').'?verified=1');
+        $request->fulfill();
+
+        return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
     }
 }

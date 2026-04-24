@@ -4,36 +4,28 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\CreateUserEmailResetNotification;
+use App\Http\Requests\CreateUserEmailResetNotificationRequest;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Inertia\Response;
 
-class UserEmailResetNotificationController extends Controller
+final readonly class UserEmailResetNotificationController
 {
-    public function create()
+    public function create(Request $request): Response
     {
-        return Inertia::render('auth/ForgotPassword', [
-            'status' => session('status'),
+        return Inertia::render('user-email-reset-notification/Create', [
+            'status' => $request->session()->get('status'),
         ]);
     }
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'email' => ['required', 'email'],
-        ]);
+    public function store(
+        CreateUserEmailResetNotificationRequest $request,
+        CreateUserEmailResetNotification $action
+    ): RedirectResponse {
+        $action->handle(['email' => $request->string('email')->value()]);
 
-        $status = Password::broker()->sendResetLink([
-            'email' => $validated['email'],
-        ]);
-
-        if ($status !== Password::RESET_LINK_SENT) {
-            throw ValidationException::withMessages([
-                'email' => trans($status),
-            ]);
-        }
-
-        return back()->with('status', trans($status));
+        return back()->with('status', __('A reset link will be sent if the account exists.'));
     }
 }

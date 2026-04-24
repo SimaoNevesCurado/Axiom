@@ -1529,6 +1529,51 @@ it('adds laravel fortify and registers FortifyServiceProvider when installing au
     }
 });
 
+it('publishes starter-kit auth actions, requests and pages when installing auth scaffold', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        expect($result->written)->toContain('config/fortify.php')
+            ->toContain('app/Actions/CreateUser.php')
+            ->toContain('app/Http/Requests/CreateSessionRequest.php')
+            ->toContain('app/Rules/ValidEmail.php')
+            ->toContain('resources/js/pages/session/Create.vue')
+            ->toContain('resources/js/pages/user/Create.vue');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 function deleteDirectoryForInstallActionTest(string $path): void
 {
     if (! is_dir($path)) {

@@ -4,42 +4,50 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use Illuminate\Auth\Events\Registered;
+use App\Actions\CreateUser;
+use App\Actions\DeleteUser;
+use App\Http\Requests\CreateUserRequest;
+use App\Http\Requests\DeleteUserRequest;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
+use Inertia\Response;
 
-class UserController extends Controller
+final readonly class UserController
 {
-    public function create()
+    public function create(): Response
     {
-        return Inertia::render('auth/Register');
+        return Inertia::render('user/Create');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(CreateUserRequest $request, CreateUser $action): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::defaults()],
-        ]);
+        /** @var array<string, mixed> $attributes */
+        $attributes = $request->safe()->except('password');
 
-        $model = config('auth.providers.users.model', \App\Models\User::class);
-
-        /** @var \Illuminate\Foundation\Auth\User $user */
-        $user = $model::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-        ]);
-
-        event(new Registered($user));
+        $user = $action->handle(
+            $attributes,
+            $request->string('password')->value(),
+        );
 
         Auth::login($user);
 
-        return redirect()->intended(config('fortify.home', '/dashboard'));
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    public function destroy(DeleteUserRequest $request, #[CurrentUser] User $user, DeleteUser $action): RedirectResponse
+    {
+        Auth::logout();
+
+        $action->handle($user);
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return to_route('home');
     }
 }

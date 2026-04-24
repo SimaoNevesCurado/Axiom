@@ -184,7 +184,35 @@ final readonly class InstallAxiomAction
                 skipped: $skipped,
             );
 
+            $this->writeAuthActions(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+
+            $this->writeAuthRequests(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+
+            $this->writeAuthRules(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+
             $this->writeAuthControllers(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+
+            $this->writeAuthPages(
                 basePath: $basePath,
                 overwrite: $selections->overwriteFiles,
                 written: $written,
@@ -274,6 +302,15 @@ final readonly class InstallAxiomAction
             overwrite: false,
             written: $written,
             skipped: $skipped,
+        );
+
+        $this->writeFile(
+            path: $basePath.'/config/fortify.php',
+            content: $this->stub('auth/config/fortify.stub'),
+            overwrite: false,
+            written: $written,
+            skipped: $skipped,
+            basePath: $basePath,
         );
     }
 
@@ -975,6 +1012,116 @@ final readonly class InstallAxiomAction
         foreach ($controllers as $controller => $stub) {
             $this->writeFile(
                 path: $basePath.'/app/Http/Controllers/'.$controller.'.php',
+                content: $this->stub($stub),
+                overwrite: $overwrite,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+        }
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeAuthActions(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $actions = [
+            'CreateUser' => 'auth/actions/CreateUser.stub',
+            'CreateUserEmailResetNotification' => 'auth/actions/CreateUserEmailResetNotification.stub',
+            'CreateUserEmailVerificationNotification' => 'auth/actions/CreateUserEmailVerificationNotification.stub',
+            'CreateUserPassword' => 'auth/actions/CreateUserPassword.stub',
+            'DeleteUser' => 'auth/actions/DeleteUser.stub',
+            'UpdateUserPassword' => 'auth/actions/UpdateUserPassword.stub',
+        ];
+
+        foreach ($actions as $action => $stub) {
+            $this->writeFile(
+                path: $basePath.'/app/Actions/'.$action.'.php',
+                content: $this->stub($stub),
+                overwrite: $overwrite,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+        }
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeAuthRequests(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $requests = [
+            'CreateSessionRequest' => 'auth/requests/CreateSessionRequest.stub',
+            'CreateUserRequest' => 'auth/requests/CreateUserRequest.stub',
+            'CreateUserEmailResetNotificationRequest' => 'auth/requests/CreateUserEmailResetNotificationRequest.stub',
+            'CreateUserPasswordRequest' => 'auth/requests/CreateUserPasswordRequest.stub',
+            'DeleteUserRequest' => 'auth/requests/DeleteUserRequest.stub',
+            'ShowUserTwoFactorAuthenticationRequest' => 'auth/requests/ShowUserTwoFactorAuthenticationRequest.stub',
+            'UpdateUserPasswordRequest' => 'auth/requests/UpdateUserPasswordRequest.stub',
+        ];
+
+        foreach ($requests as $request => $stub) {
+            $this->writeFile(
+                path: $basePath.'/app/Http/Requests/'.$request.'.php',
+                content: $this->stub($stub),
+                overwrite: $overwrite,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+        }
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeAuthRules(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $this->writeFile(
+            path: $basePath.'/app/Rules/ValidEmail.php',
+            content: $this->stub('auth/rules/ValidEmail.stub'),
+            overwrite: $overwrite,
+            written: $written,
+            skipped: $skipped,
+            basePath: $basePath,
+        );
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeAuthPages(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $pages = [
+            'session/Create.vue' => 'auth/pages/session/Create.vue.stub',
+            'user/Create.vue' => 'auth/pages/user/Create.vue.stub',
+        ];
+
+        foreach ($pages as $page => $stub) {
+            $this->writeFile(
+                path: $basePath.'/resources/js/pages/'.$page,
                 content: $this->stub($stub),
                 overwrite: $overwrite,
                 written: $written,
