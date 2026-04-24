@@ -32,6 +32,7 @@ it('does not overwrite existing files without force', function () {
                 aiGuidelines: AiGuidelinePreset::Boost,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -45,7 +46,7 @@ it('does not overwrite existing files without force', function () {
         );
 
         expect($result->written)->toBe([])
-            ->and($result->skipped)->toBe(['AGENTS.md', 'app/Providers/FortifyServiceProvider.php'])
+            ->and($result->skipped)->toBe(['AGENTS.md'])
             ->and(file_get_contents($basePath.'/AGENTS.md'))->toBe('existing');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
@@ -70,6 +71,7 @@ it('writes claude guidelines to a claude file', function () {
                 aiGuidelines: AiGuidelinePreset::Claude,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -108,6 +110,7 @@ it('writes multiple AI guideline files when multiple presets are selected', func
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -148,6 +151,7 @@ it('writes gemini and opencode guideline files when selected', function () {
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -195,6 +199,7 @@ it('writes vue-specific guideline stubs when the host project uses vue', functio
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -244,6 +249,7 @@ it('writes react-specific guideline stubs when the host project uses react', fun
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -292,6 +298,7 @@ it('writes no-frontend guideline stubs when no frontend framework is detected', 
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -335,6 +342,7 @@ it('creates actions and dto folders when architecture is enabled', function () {
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: true,
                 installQualityGuidelines: false,
@@ -381,6 +389,7 @@ it('adds recommended composer scripts to the host project', function () {
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -438,6 +447,7 @@ it('adds backend-only composer scripts when the host project has no frontend pac
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -574,6 +584,7 @@ it('publishes quality preset files and strict provider defaults', function () {
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: true,
@@ -632,6 +643,7 @@ it('adds php quality dependencies to composer json when requested', function () 
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -675,6 +687,7 @@ it('adds only selected php tooling and debugbar when requested', function () {
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -726,6 +739,7 @@ it('adds frontend quality dependencies to package json when requested', function
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -1126,12 +1140,20 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::post('logout', fn (): string => 'ok')->name('logout');
-    Route::get('verify-email', fn (): string => 'ok')->name('verification.notice');
+    Route::get('email/verify', fn (): string => 'ok')->name('verification.notice');
     Route::post('email/verification-notification', fn (): string => 'ok')->name('verification.send');
-    Route::get('verify-email/{id}/{hash}', fn (): string => 'ok')->name('verification.verify');
+    Route::get('email/verify/{id}/{hash}', fn (): string => 'ok')->name('verification.verify');
     Route::get('settings/two-factor', fn (): string => 'ok')->name('two-factor.show');
-    Route::get('confirm-password', fn (): string => 'ok')->name('password.confirm');
-    Route::post('confirm-password', fn (): string => 'ok')->name('password.confirm.store');
+    Route::get('user/confirm-password', fn (): string => 'ok')->name('password.confirm');
+    Route::post('user/confirm-password', fn (): string => 'ok')->name('password.confirm.store');
+    Route::get('user/confirmed-password-status', fn (): string => 'ok')->name('password.confirmation');
+    Route::post('user/two-factor-authentication', fn (): string => 'ok')->name('two-factor.enable');
+    Route::delete('user/two-factor-authentication', fn (): string => 'ok')->name('two-factor.disable');
+    Route::post('user/confirmed-two-factor-authentication', fn (): string => 'ok')->name('two-factor.confirm');
+    Route::get('user/two-factor-qr-code', fn (): string => 'ok')->name('two-factor.qr-code');
+    Route::get('user/two-factor-secret-key', fn (): string => 'ok')->name('two-factor.secret-key');
+    Route::get('user/two-factor-recovery-codes', fn (): string => 'ok')->name('two-factor.recovery-codes');
+    Route::post('user/two-factor-recovery-codes', fn (): string => 'ok')->name('two-factor.regenerate-recovery-codes');
 });
 PHP);
 
@@ -1216,12 +1238,20 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::post('logout', fn (): string => 'ok')->name('logout');
-    Route::get('verify-email', fn (): string => 'ok')->name('verification.notice');
+    Route::get('email/verify', fn (): string => 'ok')->name('verification.notice');
     Route::post('email/verification-notification', fn (): string => 'ok')->name('verification.send');
-    Route::get('verify-email/{id}/{hash}', fn (): string => 'ok')->name('verification.verify');
+    Route::get('email/verify/{id}/{hash}', fn (): string => 'ok')->name('verification.verify');
     Route::get('settings/two-factor', fn (): string => 'ok')->name('two-factor.show');
-    Route::get('confirm-password', fn (): string => 'ok')->name('password.confirm');
-    Route::post('confirm-password', fn (): string => 'ok')->name('password.confirm.store');
+    Route::get('user/confirm-password', fn (): string => 'ok')->name('password.confirm');
+    Route::post('user/confirm-password', fn (): string => 'ok')->name('password.confirm.store');
+    Route::get('user/confirmed-password-status', fn (): string => 'ok')->name('password.confirmation');
+    Route::post('user/two-factor-authentication', fn (): string => 'ok')->name('two-factor.enable');
+    Route::delete('user/two-factor-authentication', fn (): string => 'ok')->name('two-factor.disable');
+    Route::post('user/confirmed-two-factor-authentication', fn (): string => 'ok')->name('two-factor.confirm');
+    Route::get('user/two-factor-qr-code', fn (): string => 'ok')->name('two-factor.qr-code');
+    Route::get('user/two-factor-secret-key', fn (): string => 'ok')->name('two-factor.secret-key');
+    Route::get('user/two-factor-recovery-codes', fn (): string => 'ok')->name('two-factor.recovery-codes');
+    Route::post('user/two-factor-recovery-codes', fn (): string => 'ok')->name('two-factor.regenerate-recovery-codes');
 });
 PHP);
 
@@ -1254,7 +1284,7 @@ PHP);
     }
 });
 
-it('falls back to Fortify routes when starter auth pages exist but app-managed controllers are missing', function () {
+it('does not install app-managed auth scaffold when installAuthScaffold is disabled', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
@@ -1311,6 +1341,7 @@ PHP);
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: false,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
@@ -1324,16 +1355,16 @@ PHP);
         $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
         $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
 
-        expect($result->written)->toContain('routes/web.php')
-            ->toContain('app/Providers/FortifyServiceProvider.php')
-            ->and($webRoutes)->not->toContain('// Axiom app-managed auth routes...')
-            ->and($fortifyProvider)->not->toContain('Fortify::ignoreRoutes();');
+        expect($result->written)->not->toContain('routes/web.php')
+            ->and($result->written)->not->toContain('app/Providers/FortifyServiceProvider.php')
+            ->and($webRoutes)->toContain('// Axiom app-managed auth routes...')
+            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
 });
 
-it('allows forcing app-managed routes even when starter fallback conditions are met', function () {
+it('installs app-managed auth scaffold when explicitly requested', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
@@ -1380,13 +1411,13 @@ PHP);
                 aiGuidelines: AiGuidelinePreset::None,
                 installAiSkills: false,
                 authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
                 installSsr: false,
                 installArchitectureGuidelines: false,
                 installQualityGuidelines: false,
                 installStrictLaravelDefaults: false,
                 installComposerScripts: false,
                 overwriteFiles: false,
-                forceAppRoutes: true,
             ),
             $basePath,
         );

@@ -2,6 +2,13 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.9 - 2026-04-23
+
+- simplify auth installer flow: when starter auth scaffold exists, leave auth untouched
+- when no auth scaffold exists, prompt to install auth scaffold (or use `--install-auth` non-interactively)
+- add base auth controller stubs for app-managed auth installs
+- remove fallback/force auth-route strategy from the main installer flow
+
 ## 0.3.8 - 2026-04-23
 
 - add `--force-app-routes` installer option to force app-managed auth route publishing in `routes/web.php`

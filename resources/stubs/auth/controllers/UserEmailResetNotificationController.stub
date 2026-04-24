@@ -1,0 +1,39 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+
+class UserEmailResetNotificationController extends Controller
+{
+    public function create()
+    {
+        return Inertia::render('auth/ForgotPassword', [
+            'status' => session('status'),
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $status = Password::broker()->sendResetLink([
+            'email' => $validated['email'],
+        ]);
+
+        if ($status !== Password::RESET_LINK_SENT) {
+            throw ValidationException::withMessages([
+                'email' => trans($status),
+            ]);
+        }
+
+        return back()->with('status', trans($status));
+    }
+}

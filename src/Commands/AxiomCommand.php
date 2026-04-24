@@ -22,7 +22,7 @@ final class AxiomCommand extends Command
         {--skills : Install Axiom AI skills into .ai/skills}
         {--fortify : [Deprecated] Use Fortify routes when laravel/fortify exists}
         {--auth-routes= : Auth routes mode (app, fortify)}
-        {--force-app-routes : Force app-managed auth routes in web.php, even when starter-kit fallback would use Fortify package routes}
+        {--install-auth : Install Axiom auth scaffold when the project has no auth scaffold}
         {--ssr : Use SSR in frontend starter kits}
         {--actions : Install action-oriented architecture guidance}
         {--quality : Install quality and tooling guidance}
@@ -58,10 +58,12 @@ final class AxiomCommand extends Command
         $phpTools = $this->resolvePhpTools($installQualityGuidelines);
         $frontendTools = $this->resolveFrontendTools();
 
+        $authRoutes = $this->resolveAuthRoutes();
+
         $selections = new InstallSelections(
             aiGuidelines: $aiGuidelinePresets[0] ?? AiGuidelinePreset::None,
             installAiSkills: $aiSkills !== [],
-            authRoutes: $this->resolveAuthRoutes(),
+            authRoutes: $authRoutes,
             installSsr: $this->resolveSsr(),
             installArchitectureGuidelines: $this->resolveToggle(
                 option: 'actions',
@@ -91,7 +93,7 @@ final class AxiomCommand extends Command
             overwriteFiles: (bool) $this->option('force'),
             aiGuidelinePresets: $aiGuidelinePresets,
             aiSkills: $aiSkills,
-            forceAppRoutes: (bool) $this->option('force-app-routes'),
+            installAuthScaffold: $this->resolveInstallAuthScaffold($authRoutes),
         );
 
         $result = $installAxiom->handle($selections, base_path());
@@ -320,6 +322,31 @@ final class AxiomCommand extends Command
         return AuthRoutesPreset::from($selection);
     }
 
+    private function resolveInstallAuthScaffold(AuthRoutesPreset $authRoutes): bool
+    {
+        if ($authRoutes !== AuthRoutesPreset::AppManaged) {
+            return false;
+        }
+
+        if ((bool) $this->option('install-auth')) {
+            return true;
+        }
+
+        if ($this->hasAuthScaffold()) {
+            return false;
+        }
+
+        if (! $this->input->isInteractive()) {
+            return false;
+        }
+
+        return confirm(
+            label: 'No auth scaffold found. Install Axiom auth scaffold?',
+            default: true,
+            hint: 'This creates auth controller files and app-managed auth routes in routes/web.php.',
+        );
+    }
+
     private function hasSsrEntrypoint(): bool
     {
         $paths = [
@@ -368,6 +395,23 @@ final class AxiomCommand extends Command
             (string) file_get_contents($providersPath),
             'App\\Providers\\FortifyServiceProvider::class',
         );
+    }
+
+    private function hasAuthScaffold(): bool
+    {
+        $paths = [
+            base_path('routes/auth.php'),
+            base_path('app/Providers/FortifyServiceProvider.php'),
+            base_path('resources/js/pages/auth'),
+        ];
+
+        foreach ($paths as $path) {
+            if (is_dir($path) || file_exists($path)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function resolveDebugTool(): DebugToolPreset

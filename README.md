@@ -43,7 +43,8 @@ You can also run it non-interactively:
 php artisan axiom:install \
   --ai=boost \
   --skills \
-  --auth-routes=fortify \
+  --auth-routes=app \
+  --install-auth \
   --ssr \
   --actions \
   --quality \
@@ -66,10 +67,11 @@ The installer can:
 
 - publish `AGENTS.md` or `CLAUDE.md`
 - publish `.ai/skills/*.md`
-- ask whether auth routes should be Fortify or app-managed (`routes/web.php`)
-- detect `laravel/fortify` in `composer.json` before enabling Fortify route mode
-- when app-managed mode is selected, add `Fortify::ignoreRoutes();` to `App\Providers\FortifyServiceProvider`
-- when app-managed mode is selected, ensure ignored Fortify routes are present in `routes/web.php` (including 2FA challenge and password confirmation routes)
+- if auth scaffold already exists in the starter kit, leave auth untouched
+- when no auth scaffold exists, ask whether auth scaffold should be installed
+- support non-interactive auth scaffold installation with `--install-auth`
+- when auth scaffold is installed in app-managed mode, add `Fortify::ignoreRoutes();` to `App\Providers\FortifyServiceProvider`
+- when auth scaffold is installed in app-managed mode, add auth routes to `routes/web.php` and create base auth controllers
 - ask whether the project should use SSR and wire that into `composer dev`
 - create `app/Actions` and `app/Dto`
 - publish `phpstan.neon`, `rector.php`, `pint.json`, and `tests/Unit/ArchTest.php`
