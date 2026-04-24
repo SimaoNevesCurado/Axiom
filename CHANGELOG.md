@@ -2,6 +2,12 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.15 - 2026-04-24
+
+- publish starter-kit auth login/register pages together with required shadcn-vue support files (`resources/js/components`, `resources/js/layouts`, `resources/js/lib`, and required `components/ui/*` subsets)
+- add required shadcn-vue runtime dependencies to `package.json` during auth scaffold installation (`reka-ui`, `@vueuse/core`, `lucide-vue-next`, `class-variance-authority`, `clsx`, `tailwind-merge`)
+- keep auth controllers/actions/requests aligned with starter-kit-vue while ensuring generated pages resolve their imports in non-starter projects
+
 ## 0.3.14 - 2026-04-24
 
 - choose auth page stubs dynamically during install: use starter-kit-vue pages when starter UI components exist, otherwise use portable Vue auth pages

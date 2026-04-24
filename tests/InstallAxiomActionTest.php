@@ -858,6 +858,9 @@ it('does not mutate composer require when fortify routes are enabled', function 
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
     file_put_contents($basePath.'/composer.json', json_encode([
         'name' => 'acme/demo',
         'require' => [
@@ -1533,6 +1536,9 @@ it('publishes starter-kit auth actions, requests and pages when installing auth 
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
     file_put_contents($basePath.'/composer.json', json_encode([
         'name' => 'acme/demo',
         'require' => [
@@ -1565,21 +1571,28 @@ it('publishes starter-kit auth actions, requests and pages when installing auth 
 
         $loginPage = (string) file_get_contents($basePath.'/resources/js/pages/session/Create.vue');
         $registerPage = (string) file_get_contents($basePath.'/resources/js/pages/user/Create.vue');
+        /** @var array<string, mixed> $package */
+        $package = json_decode((string) file_get_contents($basePath.'/package.json'), true);
 
         expect($result->written)->toContain('config/fortify.php')
             ->toContain('app/Actions/CreateUser.php')
             ->toContain('app/Http/Requests/CreateSessionRequest.php')
             ->toContain('app/Rules/ValidEmail.php')
+            ->toContain('resources/js/components/InputError.vue')
+            ->toContain('resources/js/layouts/AuthLayout.vue')
             ->toContain('resources/js/pages/session/Create.vue')
             ->toContain('resources/js/pages/user/Create.vue')
             ->and($loginPage)->toContain('v-bind="store.form()"')
             ->and($loginPage)->toContain("import { store } from '@/routes/login';")
-            ->and($loginPage)->not->toContain("from '@/components/")
-            ->and($loginPage)->not->toContain("from '@/layouts/AuthLayout.vue';")
+            ->and($loginPage)->toContain("import InputError from '@/components/InputError.vue';")
+            ->and($loginPage)->toContain("import AuthBase from '@/layouts/AuthLayout.vue';")
             ->and($registerPage)->toContain('v-bind="store.form()"')
             ->and($registerPage)->toContain("import { store } from '@/routes/register';")
-            ->and($registerPage)->not->toContain("from '@/components/")
-            ->and($registerPage)->not->toContain("from '@/layouts/AuthLayout.vue';");
+            ->and($registerPage)->toContain("import InputError from '@/components/InputError.vue';")
+            ->and($registerPage)->toContain("import AuthBase from '@/layouts/AuthLayout.vue';")
+            ->and($package['dependencies'])->toHaveKey('reka-ui')
+            ->and($package['dependencies'])->toHaveKey('@vueuse/core')
+            ->and($package['dependencies'])->toHaveKey('lucide-vue-next');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }

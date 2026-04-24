@@ -184,6 +184,13 @@ final readonly class InstallAxiomAction
                 skipped: $skipped,
             );
 
+            $this->ensureAuthUiDependencies(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+
             $this->writeAuthActions(
                 basePath: $basePath,
                 overwrite: $selections->overwriteFiles,
@@ -199,6 +206,13 @@ final readonly class InstallAxiomAction
             );
 
             $this->writeAuthRules(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+
+            $this->writeAuthUiSupport(
                 basePath: $basePath,
                 overwrite: $selections->overwriteFiles,
                 written: $written,
@@ -1114,15 +1128,9 @@ final readonly class InstallAxiomAction
         array &$written,
         array &$skipped,
     ): void {
-        $useStarterKitPages = $this->hasStarterKitAuthUiComponents($basePath);
-
         $pages = [
-            'session/Create.vue' => $useStarterKitPages
-                ? 'auth/pages/session/Create.vue.stub'
-                : 'auth/pages/session/Create.portable.vue.stub',
-            'user/Create.vue' => $useStarterKitPages
-                ? 'auth/pages/user/Create.vue.stub'
-                : 'auth/pages/user/Create.portable.vue.stub',
+            'session/Create.vue' => 'auth/pages/session/Create.vue.stub',
+            'user/Create.vue' => 'auth/pages/user/Create.vue.stub',
         ];
 
         foreach ($pages as $page => $stub) {
@@ -1135,6 +1143,120 @@ final readonly class InstallAxiomAction
                 basePath: $basePath,
             );
         }
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeAuthUiSupport(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $files = [
+            'components/InputError.vue' => 'auth/ui/components/InputError.vue.stub',
+            'components/TextLink.vue' => 'auth/ui/components/TextLink.vue.stub',
+            'components/AppLogoIcon.vue' => 'auth/ui/components/AppLogoIcon.vue.stub',
+            'layouts/AuthLayout.vue' => 'auth/ui/layouts/AuthLayout.vue.stub',
+            'layouts/auth/AuthSimpleLayout.vue' => 'auth/ui/layouts/auth/AuthSimpleLayout.vue.stub',
+            'lib/utils.ts' => 'auth/ui/lib/utils.ts.stub',
+            'components/ui/button/Button.vue' => 'auth/ui/components/ui/button/Button.vue.stub',
+            'components/ui/button/index.ts' => 'auth/ui/components/ui/button/index.ts.stub',
+            'components/ui/input/Input.vue' => 'auth/ui/components/ui/input/Input.vue.stub',
+            'components/ui/input/index.ts' => 'auth/ui/components/ui/input/index.ts.stub',
+            'components/ui/label/Label.vue' => 'auth/ui/components/ui/label/Label.vue.stub',
+            'components/ui/label/index.ts' => 'auth/ui/components/ui/label/index.ts.stub',
+            'components/ui/checkbox/Checkbox.vue' => 'auth/ui/components/ui/checkbox/Checkbox.vue.stub',
+            'components/ui/checkbox/index.ts' => 'auth/ui/components/ui/checkbox/index.ts.stub',
+            'components/ui/spinner/Spinner.vue' => 'auth/ui/components/ui/spinner/Spinner.vue.stub',
+            'components/ui/spinner/index.ts' => 'auth/ui/components/ui/spinner/index.ts.stub',
+        ];
+
+        foreach ($files as $target => $stub) {
+            $this->writeFile(
+                path: $basePath.'/resources/js/'.$target,
+                content: $this->stub($stub),
+                overwrite: $overwrite,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+        }
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function ensureAuthUiDependencies(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $packagePath = $basePath.'/package.json';
+
+        if (! $this->files->exists($packagePath)) {
+            $this->appendUnique($skipped, 'package.json');
+
+            return;
+        }
+
+        /** @var array<string, mixed>|null $package */
+        $package = json_decode((string) $this->files->get($packagePath), true);
+
+        if (! is_array($package)) {
+            $this->appendUnique($skipped, 'package.json');
+
+            return;
+        }
+
+        $package['dependencies'] ??= [];
+
+        if (! is_array($package['dependencies'])) {
+            $this->appendUnique($skipped, 'package.json');
+
+            return;
+        }
+
+        $dependencies = [
+            '@vueuse/core' => '^14.2.1',
+            'class-variance-authority' => '^0.7.1',
+            'clsx' => '^2.1.1',
+            'lucide-vue-next' => '^0.574.0',
+            'reka-ui' => '^2.8.0',
+            'tailwind-merge' => '^3.4.1',
+        ];
+
+        $hasChanges = false;
+
+        foreach ($dependencies as $name => $version) {
+            if (array_key_exists($name, $package['dependencies']) && ! $overwrite) {
+                continue;
+            }
+
+            if (! array_key_exists($name, $package['dependencies']) || $package['dependencies'][$name] !== $version) {
+                $package['dependencies'][$name] = $version;
+                $hasChanges = true;
+            }
+        }
+
+        if (! $hasChanges) {
+            $this->appendUnique($skipped, 'package.json');
+
+            return;
+        }
+
+        ksort($package['dependencies']);
+
+        $this->files->put(
+            $packagePath,
+            json_encode($package, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
+        );
+
+        $this->appendUnique($written, 'package.json');
     }
 
     private function hasStarterKitAuthUiComponents(string $basePath): bool
