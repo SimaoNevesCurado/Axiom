@@ -2,6 +2,12 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.13 - 2026-04-24
+
+- align auth stubs exactly with `starter-kit-vue` for `SessionController` and Vue login/register pages
+- restore starter-kit UI/layout imports in generated auth pages (shadcn-vue based components)
+- remove the temporary `method_exists` guard in generated `SessionController` so controller logic matches the starter kit implementation
+
 ## 0.3.12 - 2026-04-24
 
 - make generated auth Vue login/register pages portable by removing starter-kit-specific UI component imports
