@@ -324,7 +324,7 @@ it('writes no-frontend guideline stubs when no frontend framework is detected', 
     }
 });
 
-it('creates actions and dto folders when architecture is enabled', function () {
+it('creates actions, dto and enum folders when architecture is enabled', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
@@ -357,8 +357,10 @@ it('creates actions and dto folders when architecture is enabled', function () {
 
         expect($result->written)->toContain('app/Actions/.gitkeep')
             ->toContain('app/Dto/.gitkeep')
+            ->toContain('app/Enums/.gitkeep')
             ->and($basePath.'/app/Actions/.gitkeep')->toBeFile()
-            ->and($basePath.'/app/Dto/.gitkeep')->toBeFile();
+            ->and($basePath.'/app/Dto/.gitkeep')->toBeFile()
+            ->and($basePath.'/app/Enums/.gitkeep')->toBeFile();
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
@@ -972,11 +974,9 @@ PHP);
             ->and($fortifyProvider)->toContain("function register(): void\n    {\n        Fortify::ignoreRoutes();")
             ->and($fortifyProvider)->not->toContain("function boot(): void\n    {\n        Fortify::ignoreRoutes();")
             ->and($webRoutes)->toContain('// Axiom app-managed auth routes...')
-            ->and($webRoutes)->toContain("Route::get('login', [SessionController::class, 'create'])")
+            ->and($webRoutes)->toContain("Route::post('login', [SessionController::class, 'store'])")
             ->and($webRoutes)->toContain("Route::post('logout', [SessionController::class, 'destroy'])")
-            ->and($webRoutes)->toContain('// Axiom Fortify compatibility routes...')
-            ->and($webRoutes)->toContain("->name('two-factor.login');")
-            ->and($webRoutes)->toContain("->name('password.confirm');");
+            ->and($webRoutes)->not->toContain('// Axiom Fortify compatibility routes...');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
@@ -1067,7 +1067,7 @@ declare(strict_types=1);
 use App\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('login', [SessionController::class, 'create'])->name('login');
+Route::post('login', [SessionController::class, 'store'])->name('login.store');
 PHP);
 
     $action = new InstallAxiomAction(new Filesystem);
@@ -1092,11 +1092,9 @@ PHP);
 
         expect($result->written)->toContain('routes/web.php')
             ->and($webRoutes)->toContain('// Axiom app-managed auth routes...')
-            ->and(substr_count($webRoutes, "Route::get('login', [SessionController::class, 'create'])"))->toBe(1)
-            ->and($webRoutes)->toContain("Route::post('login', [SessionController::class, 'store'])")
-            ->and($webRoutes)->toContain('// Axiom Fortify compatibility routes...')
-            ->and($webRoutes)->toContain("->name('two-factor.login');")
-            ->and($webRoutes)->toContain("->name('password.confirm');");
+            ->and(substr_count($webRoutes, "Route::post('login', [SessionController::class, 'store'])"))->toBe(1)
+            ->and($webRoutes)->toContain("Route::post('logout', [SessionController::class, 'destroy'])")
+            ->and($webRoutes)->not->toContain('// Axiom Fortify compatibility routes...');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
@@ -1129,34 +1127,11 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function (): void {
-    Route::get('login', fn (): string => 'ok')->name('login');
     Route::post('login', fn (): string => 'ok')->name('login.store');
-    Route::get('register', fn (): string => 'ok')->name('register');
-    Route::post('register', fn (): string => 'ok')->name('register.store');
-    Route::get('forgot-password', fn (): string => 'ok')->name('password.request');
-    Route::post('forgot-password', fn (): string => 'ok')->name('password.email');
-    Route::get('reset-password/{token}', fn (): string => 'ok')->name('password.reset');
-    Route::post('reset-password', fn (): string => 'ok')->name('password.update');
-    Route::get('two-factor-challenge', fn (): string => 'ok')->name('two-factor.login');
-    Route::post('two-factor-challenge', fn (): string => 'ok')->name('two-factor.login.store');
 });
 
 Route::middleware('auth')->group(function (): void {
     Route::post('logout', fn (): string => 'ok')->name('logout');
-    Route::get('email/verify', fn (): string => 'ok')->name('verification.notice');
-    Route::post('email/verification-notification', fn (): string => 'ok')->name('verification.send');
-    Route::get('email/verify/{id}/{hash}', fn (): string => 'ok')->name('verification.verify');
-    Route::get('settings/two-factor', fn (): string => 'ok')->name('two-factor.show');
-    Route::get('user/confirm-password', fn (): string => 'ok')->name('password.confirm');
-    Route::post('user/confirm-password', fn (): string => 'ok')->name('password.confirm.store');
-    Route::get('user/confirmed-password-status', fn (): string => 'ok')->name('password.confirmation');
-    Route::post('user/two-factor-authentication', fn (): string => 'ok')->name('two-factor.enable');
-    Route::delete('user/two-factor-authentication', fn (): string => 'ok')->name('two-factor.disable');
-    Route::post('user/confirmed-two-factor-authentication', fn (): string => 'ok')->name('two-factor.confirm');
-    Route::get('user/two-factor-qr-code', fn (): string => 'ok')->name('two-factor.qr-code');
-    Route::get('user/two-factor-secret-key', fn (): string => 'ok')->name('two-factor.secret-key');
-    Route::get('user/two-factor-recovery-codes', fn (): string => 'ok')->name('two-factor.recovery-codes');
-    Route::post('user/two-factor-recovery-codes', fn (): string => 'ok')->name('two-factor.regenerate-recovery-codes');
 });
 PHP);
 
@@ -1209,14 +1184,12 @@ declare(strict_types=1);
 require __DIR__.'/auth.php';
 
 // Axiom app-managed auth routes...
-Route::middleware('auth')->group(function (): void {
-    Route::get('verify-email', fn (): string => 'old')->name('verification.notice');
-    Route::get('verify-email/{id}/{hash}', fn (): string => 'old')->name('verification.verify');
+Route::middleware('guest')->group(function (): void {
+    Route::post('login', fn (): string => 'old')->name('login.store');
 });
 
-// Axiom Fortify compatibility routes...
 Route::middleware('auth')->group(function (): void {
-    Route::get('confirm-password', fn (): string => 'old')->name('password.confirm');
+    Route::post('logout', fn (): string => 'old')->name('logout');
 });
 PHP);
     file_put_contents($basePath.'/routes/auth.php', <<<'PHP'
@@ -1227,34 +1200,11 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function (): void {
-    Route::get('login', fn (): string => 'ok')->name('login');
     Route::post('login', fn (): string => 'ok')->name('login.store');
-    Route::get('register', fn (): string => 'ok')->name('register');
-    Route::post('register', fn (): string => 'ok')->name('register.store');
-    Route::get('forgot-password', fn (): string => 'ok')->name('password.request');
-    Route::post('forgot-password', fn (): string => 'ok')->name('password.email');
-    Route::get('reset-password/{token}', fn (): string => 'ok')->name('password.reset');
-    Route::post('reset-password', fn (): string => 'ok')->name('password.update');
-    Route::get('two-factor-challenge', fn (): string => 'ok')->name('two-factor.login');
-    Route::post('two-factor-challenge', fn (): string => 'ok')->name('two-factor.login.store');
 });
 
 Route::middleware('auth')->group(function (): void {
     Route::post('logout', fn (): string => 'ok')->name('logout');
-    Route::get('email/verify', fn (): string => 'ok')->name('verification.notice');
-    Route::post('email/verification-notification', fn (): string => 'ok')->name('verification.send');
-    Route::get('email/verify/{id}/{hash}', fn (): string => 'ok')->name('verification.verify');
-    Route::get('settings/two-factor', fn (): string => 'ok')->name('two-factor.show');
-    Route::get('user/confirm-password', fn (): string => 'ok')->name('password.confirm');
-    Route::post('user/confirm-password', fn (): string => 'ok')->name('password.confirm.store');
-    Route::get('user/confirmed-password-status', fn (): string => 'ok')->name('password.confirmation');
-    Route::post('user/two-factor-authentication', fn (): string => 'ok')->name('two-factor.enable');
-    Route::delete('user/two-factor-authentication', fn (): string => 'ok')->name('two-factor.disable');
-    Route::post('user/confirmed-two-factor-authentication', fn (): string => 'ok')->name('two-factor.confirm');
-    Route::get('user/two-factor-qr-code', fn (): string => 'ok')->name('two-factor.qr-code');
-    Route::get('user/two-factor-secret-key', fn (): string => 'ok')->name('two-factor.secret-key');
-    Route::get('user/two-factor-recovery-codes', fn (): string => 'ok')->name('two-factor.recovery-codes');
-    Route::post('user/two-factor-recovery-codes', fn (): string => 'ok')->name('two-factor.regenerate-recovery-codes');
 });
 PHP);
 
@@ -1474,15 +1424,16 @@ it('installs login scaffold without requiring Laravel Fortify classes in generat
         $sessionController = (string) file_get_contents($basePath.'/app/Http/Controllers/SessionController.php');
 
         expect($result->written)->toContain('app/Http/Controllers/SessionController.php')
-            ->and($sessionController)->toContain("Inertia::render('session/Create'")
-            ->and($sessionController)->toContain("Route::has('password.request')")
+            ->and($sessionController)->toContain('Auth::login($request->validateCredentials(), $request->boolean(\'remember\'));')
+            ->and($sessionController)->not->toContain('Inertia::render')
+            ->and($sessionController)->not->toContain('hasEnabledTwoFactorAuthentication')
             ->and($sessionController)->not->toContain('Laravel\\Fortify\\Features');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
 });
 
-it('adds laravel fortify and registers FortifyServiceProvider when installing auth scaffold in projects without fortify', function () {
+it('keeps auth scaffold backend-only when fortify is not installed', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
@@ -1519,20 +1470,19 @@ it('adds laravel fortify and registers FortifyServiceProvider when installing au
         /** @var array<string, mixed> $composer */
         $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
         $providers = (string) file_get_contents($basePath.'/bootstrap/providers.php');
-        $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
 
-        expect($result->written)->toContain('composer.json')
-            ->toContain('bootstrap/providers.php')
-            ->toContain('app/Providers/FortifyServiceProvider.php')
-            ->and($composer['require'])->toHaveKey('laravel/fortify')
-            ->and($providers)->toContain('App\\Providers\\FortifyServiceProvider::class')
-            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();');
+        expect($result->written)->not->toContain('composer.json')
+            ->and($result->written)->not->toContain('bootstrap/providers.php')
+            ->and($result->written)->not->toContain('app/Providers/FortifyServiceProvider.php')
+            ->and($composer['require'])->not->toHaveKey('laravel/fortify')
+            ->and($providers)->not->toContain('App\\Providers\\FortifyServiceProvider::class')
+            ->and(file_exists($basePath.'/app/Providers/FortifyServiceProvider.php'))->toBeFalse();
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
 });
 
-it('publishes starter-kit auth actions, requests and pages when installing auth scaffold', function () {
+it('publishes only backend login auth scaffold when installing auth scaffold', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
@@ -1569,36 +1519,29 @@ it('publishes starter-kit auth actions, requests and pages when installing auth 
             $basePath,
         );
 
-        $loginPage = (string) file_get_contents($basePath.'/resources/js/pages/session/Create.vue');
-        $registerPage = (string) file_get_contents($basePath.'/resources/js/pages/user/Create.vue');
-        /** @var array<string, mixed> $package */
-        $package = json_decode((string) file_get_contents($basePath.'/package.json'), true);
+        $sessionController = (string) file_get_contents($basePath.'/app/Http/Controllers/SessionController.php');
+        $sessionRequest = (string) file_get_contents($basePath.'/app/Http/Requests/CreateSessionRequest.php');
+        $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
 
-        expect($result->written)->toContain('config/fortify.php')
-            ->toContain('app/Actions/CreateUser.php')
+        expect($result->written)->toContain('app/Http/Controllers/SessionController.php')
             ->toContain('app/Http/Requests/CreateSessionRequest.php')
-            ->toContain('app/Rules/ValidEmail.php')
-            ->toContain('resources/js/components/InputError.vue')
-            ->toContain('resources/js/layouts/AuthLayout.vue')
-            ->toContain('resources/js/pages/session/Create.vue')
-            ->toContain('resources/js/pages/user/Create.vue')
-            ->and($loginPage)->toContain('v-bind="store.form()"')
-            ->and($loginPage)->toContain("import { store } from '@/routes/login';")
-            ->and($loginPage)->toContain("import InputError from '@/components/InputError.vue';")
-            ->and($loginPage)->toContain("import AuthBase from '@/layouts/AuthLayout.vue';")
-            ->and($registerPage)->toContain('v-bind="store.form()"')
-            ->and($registerPage)->toContain("import { store } from '@/routes/register';")
-            ->and($registerPage)->toContain("import InputError from '@/components/InputError.vue';")
-            ->and($registerPage)->toContain("import AuthBase from '@/layouts/AuthLayout.vue';")
-            ->and($package['dependencies'])->toHaveKey('reka-ui')
-            ->and($package['dependencies'])->toHaveKey('@vueuse/core')
-            ->and($package['dependencies'])->toHaveKey('lucide-vue-next');
+            ->toContain('routes/web.php')
+            ->and($sessionController)->toContain('public function store(CreateSessionRequest $request): RedirectResponse')
+            ->and($sessionRequest)->toContain('public function validateCredentials(): User')
+            ->and($webRoutes)->toContain("Route::post('login', [SessionController::class, 'store'])")
+            ->and($webRoutes)->toContain("Route::post('logout', [SessionController::class, 'destroy'])")
+            ->and(file_exists($basePath.'/app/Http/Controllers/UserController.php'))->toBeFalse()
+            ->and(file_exists($basePath.'/app/Http/Requests/CreateUserRequest.php'))->toBeFalse()
+            ->and(file_exists($basePath.'/resources/js/pages/session/Create.vue'))->toBeFalse()
+            ->and(file_exists($basePath.'/resources/js/layouts/AuthLayout.vue'))->toBeFalse()
+            ->and(file_exists($basePath.'/config/fortify.php'))->toBeFalse()
+            ->and(file_exists($basePath.'/app/Providers/FortifyServiceProvider.php'))->toBeFalse();
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
 });
 
-it('uses starter-kit auth pages when starter UI dependencies are present', function () {
+it('does not publish frontend auth assets even when frontend structure exists', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
     mkdir($basePath, 0777, true);
@@ -1642,13 +1585,9 @@ it('uses starter-kit auth pages when starter UI dependencies are present', funct
             $basePath,
         );
 
-        $loginPage = (string) file_get_contents($basePath.'/resources/js/pages/session/Create.vue');
-        $registerPage = (string) file_get_contents($basePath.'/resources/js/pages/user/Create.vue');
-
-        expect($loginPage)->toContain("import InputError from '@/components/InputError.vue';")
-            ->and($loginPage)->toContain("import AuthBase from '@/layouts/AuthLayout.vue';")
-            ->and($registerPage)->toContain("import InputError from '@/components/InputError.vue';")
-            ->and($registerPage)->toContain("import AuthBase from '@/layouts/AuthLayout.vue';");
+        expect(file_exists($basePath.'/resources/js/pages/session/Create.vue'))->toBeFalse()
+            ->and(file_exists($basePath.'/resources/js/pages/user/Create.vue'))->toBeFalse()
+            ->and(file_exists($basePath.'/resources/css/axiom-auth.css'))->toBeFalse();
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }

@@ -58,6 +58,7 @@ it('installs the selected presets non-interactively', function () {
             ->and($basePath.'/.ai/quality.md')->toBeFile()
             ->and($basePath.'/app/Actions/.gitkeep')->toBeFile()
             ->and($basePath.'/app/Dto/.gitkeep')->toBeFile()
+            ->and($basePath.'/app/Enums/.gitkeep')->toBeFile()
             ->and($basePath.'/config/axiom.php')->toBeFile()
             ->and($basePath.'/app/Providers/AxiomServiceProvider.php')->toBeFile()
             ->and($composer['require']['laravel/fortify'])->toBe('^1.36.1')

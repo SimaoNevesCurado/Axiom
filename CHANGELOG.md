@@ -2,6 +2,12 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.16 - 2026-04-27
+
+- reduce the app-managed auth scaffold to a backend-only login install by publishing only `SessionController`, `CreateSessionRequest`, and app-managed `login` / `logout` routes
+- stop auto-installing frontend auth pages, shadcn-vue support files, frontend auth runtime dependencies, and Fortify scaffolding when the project only needs backend login handling
+- keep `Fortify::ignoreRoutes();` integration for projects that already use Fortify while updating regression coverage for the new backend-only auth flow
+
 ## 0.3.15 - 2026-04-24
 
 - publish starter-kit auth login/register pages together with required shadcn-vue support files (`resources/js/components`, `resources/js/layouts`, `resources/js/lib`, and required `components/ui/*` subsets)

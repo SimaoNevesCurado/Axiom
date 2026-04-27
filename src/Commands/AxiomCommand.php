@@ -67,7 +67,7 @@ final class AxiomCommand extends Command
             installSsr: $this->resolveSsr(),
             installArchitectureGuidelines: $this->resolveToggle(
                 option: 'actions',
-                question: 'Install Actions + Dto folders?',
+                question: "Install Actions, Enums and DTO's folders?",
             ),
             installQualityGuidelines: $installQualityGuidelines,
             installStrictLaravelDefaults: $this->resolveToggle(
@@ -185,7 +185,6 @@ final class AxiomCommand extends Command
         $selection = multiselect(
             label: 'Choose an AI preset',
             options: [
-                AiGuidelinePreset::Boost->value => 'Boost preset (AGENTS.md)',
                 AiGuidelinePreset::Codex->value => 'Codex preset (AGENTS.md)',
                 AiGuidelinePreset::Claude->value => 'Claude preset (CLAUDE.md)',
                 AiGuidelinePreset::Gemini->value => 'Gemini preset (GEMINI.md)',

@@ -70,12 +70,11 @@ The installer can:
 - if auth scaffold already exists in the starter kit, leave auth untouched
 - when no auth scaffold exists, ask whether auth scaffold should be installed
 - support non-interactive auth scaffold installation with `--install-auth`
-- when auth scaffold is installed and `laravel/fortify` is missing, add it to `composer.json` and register/create `App\Providers\FortifyServiceProvider`
-- when auth scaffold is installed in app-managed mode, add `Fortify::ignoreRoutes();` to `App\Providers\FortifyServiceProvider`
-- auth scaffold now publishes starter-kit auth building blocks (Fortify config, auth Actions, FormRequests, Rules), starter login/register pages, and the required shadcn-vue support files/dependencies used by those pages
+- when auth scaffold is installed in app-managed mode and the project already uses Fortify, add `Fortify::ignoreRoutes();` to `App\Providers\FortifyServiceProvider`
+- auth scaffold now installs a backend-only login scaffold (`SessionController`, `CreateSessionRequest`, and app-managed `login`/`logout` routes) without publishing frontend auth pages or frontend auth dependencies
 - when auth scaffold is installed in app-managed mode, add auth routes to `routes/web.php` and create base auth controllers
 - ask whether the project should use SSR and wire that into `composer dev`
-- create `app/Actions` and `app/Dto`
+- create `app/Actions`, `app/Dto`, and `app/Enums`
 - publish `phpstan.neon`, `rector.php`, `pint.json`, and `tests/Unit/ArchTest.php`
 - publish a host `App\Providers\AxiomServiceProvider`
 - register that provider in `bootstrap/providers.php` when available
@@ -89,6 +88,7 @@ When you enable architecture-related options, the installer prepares the host pr
 
 - `app/Actions`
 - `app/Dto`
+- `app/Enums`
 - `.ai/architecture.md`
 - `.ai/quality.md`
 - `.ai/skills/actions.md`
