@@ -11,11 +11,11 @@ use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 use Laravel\Fortify\Fortify;
 
-class FortifyServiceProvider extends ServiceProvider
+final class FortifyServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        Fortify::ignoreRoutes();
+        //
     }
 
     public function boot(): void
@@ -26,8 +26,8 @@ class FortifyServiceProvider extends ServiceProvider
 
     private function bootFortifyDefaults(): void
     {
-        Fortify::twoFactorChallengeView(fn () => Inertia::render('user-two-factor-authentication-challenge/Show'));
-        Fortify::confirmPasswordView(fn () => Inertia::render('user-password-confirmation/Create'));
+        Fortify::twoFactorChallengeView(fn () => Inertia::render('{{ userTwoFactorAuthenticationChallengeShowPage }}'));
+        Fortify::confirmPasswordView(fn () => Inertia::render('{{ userPasswordConfirmationCreatePage }}'));
     }
 
     private function bootRateLimitingDefaults(): void

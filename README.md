@@ -70,9 +70,9 @@ The installer can:
 - if auth scaffold already exists in the starter kit, leave auth untouched
 - when no auth scaffold exists, ask whether auth scaffold should be installed
 - support non-interactive auth scaffold installation with `--install-auth`
-- when auth scaffold is installed in app-managed mode and the project already uses Fortify, add `Fortify::ignoreRoutes();` to `App\Providers\FortifyServiceProvider`
-- auth scaffold now installs a backend-only login scaffold (`SessionController`, `CreateSessionRequest`, and app-managed `login`/`logout` routes) without publishing frontend auth pages or frontend auth dependencies
-- when auth scaffold is installed in app-managed mode, add auth routes to `routes/web.php` and create base auth controllers
+- when Fortify is installed, ask whether auth should use Fortify-managed routes or app-managed routes
+- when auth scaffold is installed in app-managed mode, publish the React/Vue starter-kit backend auth stubs and routes without publishing frontend auth pages or frontend auth dependencies
+- when Fortify-managed mode is selected, leave existing Fortify files untouched
 - ask whether the project should use SSR and wire that into `composer dev`
 - create `app/Actions`, `app/Dto`, and `app/Enums`
 - publish `phpstan.neon`, `rector.php`, `pint.json`, and `tests/Unit/ArchTest.php`

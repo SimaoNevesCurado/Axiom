@@ -187,7 +187,30 @@ final readonly class InstallAxiomAction
         }
 
         if ($selections->authRoutes === AuthRoutesPreset::AppManaged && $selections->installAuthScaffold) {
+            if ($this->hasFortifyInstalled($basePath)) {
+                $this->writeFortifyScaffold(
+                    basePath: $basePath,
+                    overwrite: $selections->overwriteFiles,
+                    written: $written,
+                    skipped: $skipped,
+                );
+            }
+
+            $this->writeAuthActions(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+
             $this->writeAuthRequests(
+                basePath: $basePath,
+                overwrite: $selections->overwriteFiles,
+                written: $written,
+                skipped: $skipped,
+            );
+
+            $this->writeAuthRules(
                 basePath: $basePath,
                 overwrite: $selections->overwriteFiles,
                 written: $written,
@@ -205,13 +228,6 @@ final readonly class InstallAxiomAction
                 basePath: $basePath,
                 written: $written,
                 skipped: $skipped,
-            );
-
-            $this->configureFortifyProviderToIgnoreRoutes(
-                basePath: $basePath,
-                written: $written,
-                skipped: $skipped,
-                shouldIgnoreRoutes: true,
             );
         }
 
@@ -364,6 +380,68 @@ final readonly class InstallAxiomAction
         return (string) $this->files->get(__DIR__.'/../../resources/stubs/'.$relativePath);
     }
 
+    private function authStub(string $relativePath, string $basePath): string
+    {
+        return strtr($this->stub($relativePath), $this->authStubReplacements($basePath));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function authStubReplacements(string $basePath): array
+    {
+        $pages = $this->authPageNames($basePath);
+
+        return [
+            '{{ sessionCreatePage }}' => $pages['sessionCreate'],
+            '{{ userCreatePage }}' => $pages['userCreate'],
+            '{{ userEmailResetNotificationCreatePage }}' => $pages['userEmailResetNotificationCreate'],
+            '{{ userEmailVerificationNotificationCreatePage }}' => $pages['userEmailVerificationNotificationCreate'],
+            '{{ userPasswordCreatePage }}' => $pages['userPasswordCreate'],
+            '{{ userPasswordEditPage }}' => $pages['userPasswordEdit'],
+            '{{ userProfileEditPage }}' => $pages['userProfileEdit'],
+            '{{ userTwoFactorAuthenticationShowPage }}' => $pages['userTwoFactorAuthenticationShow'],
+            '{{ userTwoFactorAuthenticationChallengeShowPage }}' => $pages['userTwoFactorAuthenticationChallengeShow'],
+            '{{ userPasswordConfirmationCreatePage }}' => $pages['userPasswordConfirmationCreate'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function authPageNames(string $basePath): array
+    {
+        if ($this->frontendProfile($basePath) === 'react') {
+            return [
+                'appearance' => 'appearance/update',
+                'sessionCreate' => 'session/create',
+                'userCreate' => 'user/create',
+                'userEmailResetNotificationCreate' => 'user-email-reset-notification/create',
+                'userEmailVerificationNotificationCreate' => 'user-email-verification-notification/create',
+                'userPasswordCreate' => 'user-password/create',
+                'userPasswordEdit' => 'user-password/edit',
+                'userProfileEdit' => 'user-profile/edit',
+                'userTwoFactorAuthenticationShow' => 'user-two-factor-authentication/show',
+                'userTwoFactorAuthenticationChallengeShow' => 'user-two-factor-authentication-challenge/show',
+                'userPasswordConfirmationCreate' => 'user-password-confirmation/create',
+            ];
+        }
+
+        return [
+            'appearance' => 'appearance/Update',
+            'sessionCreate' => 'session/Create',
+            'userCreate' => 'user/Create',
+            'userEmailResetNotificationCreate' => 'user-email-reset-notification/Create',
+            'userEmailVerificationNotificationCreate' => 'user-email-verification-notification/Create',
+            'userPasswordCreate' => 'user-password/Create',
+            'userPasswordEdit' => 'user-password/Edit',
+            'userProfileEdit' => 'user-profile/Edit',
+            'userTwoFactorAuthenticationShow' => 'user-two-factor-authentication/Show',
+            'userTwoFactorAuthenticationChallengeShow' => 'user-two-factor-authentication-challenge/Show',
+            'userPasswordConfirmationCreate' => 'user-password-confirmation/Create',
+        ];
+    }
+
     private function relativePath(string $path, string $basePath): string
     {
         return ltrim(str_replace($basePath, '', $path), '/');
@@ -421,114 +499,37 @@ final readonly class InstallAxiomAction
      * @param  list<string>  &$written
      * @param  list<string>  &$skipped
      */
-    private function configureFortifyProviderToIgnoreRoutes(
+    private function writeFortifyScaffold(
         string $basePath,
+        bool $overwrite,
         array &$written,
         array &$skipped,
-        bool $shouldIgnoreRoutes,
     ): void {
-        $providerPath = $basePath.'/app/Providers/FortifyServiceProvider.php';
-
-        if (! $this->files->exists($providerPath)) {
-            $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
-
-            return;
-        }
-
-        $contents = (string) $this->files->get($providerPath);
-        $updated = $contents;
-
-        if (! str_contains($updated, 'use Laravel\\Fortify\\Fortify;') && $shouldIgnoreRoutes) {
-            if (preg_match_all('/^use\s+[^;]+;\s*$/m', $updated, $matches, PREG_OFFSET_CAPTURE) === false) {
-                $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
-
-                return;
-            }
-
-            if ($matches[0] !== []) {
-                $last = $matches[0][array_key_last($matches[0])];
-                $line = $last[0];
-                $offset = $last[1] + strlen($line);
-                $updated = substr($updated, 0, $offset)."\nuse Laravel\\Fortify\\Fortify;".substr($updated, $offset);
-            } elseif (preg_match('/^namespace\s+[^;]+;\s*$/m', $updated, $namespace, PREG_OFFSET_CAPTURE) === 1) {
-                $line = $namespace[0][0];
-                $offset = $namespace[0][1] + strlen($line);
-                $updated = substr($updated, 0, $offset)."\n\nuse Laravel\\Fortify\\Fortify;".substr($updated, $offset);
-            } else {
-                $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
-
-                return;
-            }
-        }
-
-        $updatedWithoutIgnoreRoutes = preg_replace(
-            '/^\h*Fortify::ignoreRoutes\(\);\h*\R?/m',
-            '',
-            $updated,
+        $this->writeFile(
+            path: $basePath.'/config/fortify.php',
+            content: $this->stub('auth/config/fortify.stub'),
+            overwrite: $overwrite,
+            written: $written,
+            skipped: $skipped,
+            basePath: $basePath,
         );
 
-        if ($updatedWithoutIgnoreRoutes === null) {
-            $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
-
-            return;
-        }
-
-        $updated = $updatedWithoutIgnoreRoutes;
-
-        if (! $shouldIgnoreRoutes) {
-            if ($updated === $contents) {
-                $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
-
-                return;
-            }
-
-            $this->files->put($providerPath, $updated);
-            $this->appendUnique($written, 'app/Providers/FortifyServiceProvider.php');
-
-            return;
-        }
-
-        $updatedWithIgnoreRoutes = preg_replace(
-            '/function\s+register\s*\([^)]*\)\s*(?::\s*void)?\s*\{\s*/m',
-            "function register(): void\n    {\n        Fortify::ignoreRoutes();\n\n        ",
-            $updated,
-            1,
-            $count,
+        $this->writeFile(
+            path: $basePath.'/app/Providers/FortifyServiceProvider.php',
+            content: $this->authStub('auth/providers/FortifyServiceProvider.stub', $basePath),
+            overwrite: $overwrite,
+            written: $written,
+            skipped: $skipped,
+            basePath: $basePath,
         );
 
-        if ($updatedWithIgnoreRoutes === null) {
-            $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
-
-            return;
-        }
-
-        if ($count === 0) {
-            $updatedWithIgnoreRoutes = preg_replace(
-                '/function\s+boot\s*\([^)]*\)\s*(?::\s*void)?\s*\{\s*/m',
-                "function boot(): void\n    {\n        Fortify::ignoreRoutes();\n\n        ",
-                $updated,
-                1,
-                $count,
-            );
-
-            if ($updatedWithIgnoreRoutes === null || $count === 0) {
-                $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
-
-                return;
-            }
-        }
-
-        $updated = $updatedWithIgnoreRoutes;
-
-        if ($updated === $contents) {
-            $this->appendUnique($skipped, 'app/Providers/FortifyServiceProvider.php');
-
-            return;
-        }
-
-        $this->files->put($providerPath, $updated);
-
-        $this->appendUnique($written, 'app/Providers/FortifyServiceProvider.php');
+        $this->registerBootstrapProvider(
+            basePath: $basePath,
+            provider: 'App\\Providers\\FortifyServiceProvider::class',
+            overwrite: $overwrite,
+            written: $written,
+            skipped: $skipped,
+        );
     }
 
     /**
@@ -549,7 +550,7 @@ final readonly class InstallAxiomAction
         $routesContents = $this->routesContents($basePath, $updated);
         $missingAppManagedRoutes = $this->missingRoutes(
             $routesContents,
-            $this->appManagedRouteDefinitions(),
+            $this->appManagedRouteDefinitions($basePath),
         );
         $hasFortify = $this->hasFortifyInstalled($basePath);
 
@@ -586,6 +587,14 @@ final readonly class InstallAxiomAction
     {
         $imports = [
             'use App\\Http\\Controllers\\SessionController;',
+            'use App\\Http\\Controllers\\UserController;',
+            'use App\\Http\\Controllers\\UserEmailResetNotificationController;',
+            'use App\\Http\\Controllers\\UserEmailVerificationController;',
+            'use App\\Http\\Controllers\\UserEmailVerificationNotificationController;',
+            'use App\\Http\\Controllers\\UserPasswordController;',
+            'use App\\Http\\Controllers\\UserProfileController;',
+            'use App\\Http\\Controllers\\UserTwoFactorAuthenticationController;',
+            'use Inertia\\Inertia;',
         ];
 
         $missing = array_values(array_filter(
@@ -786,18 +795,38 @@ final readonly class InstallAxiomAction
     }
 
     /**
-     * @return list<array{name: string, middleware: 'guest'|'auth', method: 'get'|'post'|'delete', uri: string, code: string}>
+     * @return list<array{name: string|null, middleware: 'guest'|'auth', method: string, uri: string, code: string}>
      */
-    private function appManagedRouteDefinitions(): array
+    private function appManagedRouteDefinitions(string $basePath): array
     {
+        $pages = $this->authPageNames($basePath);
+
         return [
+            ['name' => 'user.destroy', 'middleware' => 'auth', 'method' => 'delete', 'uri' => 'user', 'code' => "Route::delete('user', [UserController::class, 'destroy'])\n    ->name('user.destroy');"],
+            ['name' => null, 'middleware' => 'auth', 'method' => 'redirect', 'uri' => 'settings', 'code' => "Route::redirect('settings', '/settings/profile');"],
+            ['name' => 'user-profile.edit', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'settings/profile', 'code' => "Route::get('settings/profile', [UserProfileController::class, 'edit'])\n    ->name('user-profile.edit');"],
+            ['name' => 'user-profile.update', 'middleware' => 'auth', 'method' => 'patch', 'uri' => 'settings/profile', 'code' => "Route::patch('settings/profile', [UserProfileController::class, 'update'])\n    ->name('user-profile.update');"],
+            ['name' => 'password.edit', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'settings/password', 'code' => "Route::get('settings/password', [UserPasswordController::class, 'edit'])\n    ->name('password.edit');"],
+            ['name' => 'password.update', 'middleware' => 'auth', 'method' => 'put', 'uri' => 'settings/password', 'code' => "Route::put('settings/password', [UserPasswordController::class, 'update'])\n    ->middleware('throttle:6,1')\n    ->name('password.update');"],
+            ['name' => 'appearance.edit', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'settings/appearance', 'code' => "Route::get('settings/appearance', fn () => Inertia::render('{$pages['appearance']}'))\n    ->name('appearance.edit');"],
+            ['name' => 'two-factor.show', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'settings/two-factor', 'code' => "Route::get('settings/two-factor', [UserTwoFactorAuthenticationController::class, 'show'])\n    ->name('two-factor.show');"],
+            ['name' => 'register', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'register', 'code' => "Route::get('register', [UserController::class, 'create'])\n    ->name('register');"],
+            ['name' => 'register.store', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'register', 'code' => "Route::post('register', [UserController::class, 'store'])\n    ->name('register.store');"],
+            ['name' => 'password.reset', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'reset-password/{token}', 'code' => "Route::get('reset-password/{token}', [UserPasswordController::class, 'create'])\n    ->name('password.reset');"],
+            ['name' => 'password.store', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'reset-password', 'code' => "Route::post('reset-password', [UserPasswordController::class, 'store'])\n    ->name('password.store');"],
+            ['name' => 'password.request', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'forgot-password', 'code' => "Route::get('forgot-password', [UserEmailResetNotificationController::class, 'create'])\n    ->name('password.request');"],
+            ['name' => 'password.email', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'forgot-password', 'code' => "Route::post('forgot-password', [UserEmailResetNotificationController::class, 'store'])\n    ->name('password.email');"],
+            ['name' => 'login', 'middleware' => 'guest', 'method' => 'get', 'uri' => 'login', 'code' => "Route::get('login', [SessionController::class, 'create'])\n    ->name('login');"],
             ['name' => 'login.store', 'middleware' => 'guest', 'method' => 'post', 'uri' => 'login', 'code' => "Route::post('login', [SessionController::class, 'store'])\n    ->name('login.store');"],
+            ['name' => 'verification.notice', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'verify-email', 'code' => "Route::get('verify-email', [UserEmailVerificationNotificationController::class, 'create'])\n    ->name('verification.notice');"],
+            ['name' => 'verification.send', 'middleware' => 'auth', 'method' => 'post', 'uri' => 'email/verification-notification', 'code' => "Route::post('email/verification-notification', [UserEmailVerificationNotificationController::class, 'store'])\n    ->middleware('throttle:6,1')\n    ->name('verification.send');"],
+            ['name' => 'verification.verify', 'middleware' => 'auth', 'method' => 'get', 'uri' => 'verify-email/{id}/{hash}', 'code' => "Route::get('verify-email/{id}/{hash}', [UserEmailVerificationController::class, 'update'])\n    ->middleware(['signed', 'throttle:6,1'])\n    ->name('verification.verify');"],
             ['name' => 'logout', 'middleware' => 'auth', 'method' => 'post', 'uri' => 'logout', 'code' => "Route::post('logout', [SessionController::class, 'destroy'])\n    ->name('logout');"],
         ];
     }
 
     /**
-     * @return list<array{name: string, middleware: 'guest'|'auth', method: 'get'|'post'|'delete', uri: string, code: string}>
+     * @return list<array{name: string|null, middleware: 'guest'|'auth', method: string, uri: string, code: string}>
      */
     private function fortifyCompatibilityRouteDefinitions(): array
     {
@@ -805,15 +834,15 @@ final readonly class InstallAxiomAction
     }
 
     /**
-     * @param  list<array{name: string, middleware: 'guest'|'auth', method: 'get'|'post'|'delete', uri: string, code: string}>  $definitions
-     * @return list<array{name: string, middleware: 'guest'|'auth', method: 'get'|'post'|'delete', uri: string, code: string}>
+     * @param  list<array{name: string|null, middleware: 'guest'|'auth', method: string, uri: string, code: string}>  $definitions
+     * @return list<array{name: string|null, middleware: 'guest'|'auth', method: string, uri: string, code: string}>
      */
     private function missingRoutes(string $routesContents, array $definitions): array
     {
         $missing = [];
 
         foreach ($definitions as $definition) {
-            if ($this->hasNamedRoute($routesContents, $definition['name'])) {
+            if (is_string($definition['name']) && $this->hasNamedRoute($routesContents, $definition['name'])) {
                 continue;
             }
 
@@ -832,7 +861,7 @@ final readonly class InstallAxiomAction
     }
 
     /**
-     * @param  list<array{name: string, middleware: 'guest'|'auth', method: 'get'|'post'|'delete', uri: string, code: string}>  $definitions
+     * @param  list<array{name: string|null, middleware: 'guest'|'auth', method: string, uri: string, code: string}>  $definitions
      */
     private function renderRouteBlock(string $label, array $definitions): string
     {
@@ -875,12 +904,19 @@ final readonly class InstallAxiomAction
     ): void {
         $controllers = [
             'SessionController' => 'auth/controllers/SessionController.stub',
+            'UserController' => 'auth/controllers/UserController.stub',
+            'UserEmailResetNotificationController' => 'auth/controllers/UserEmailResetNotificationController.stub',
+            'UserEmailVerificationController' => 'auth/controllers/UserEmailVerificationController.stub',
+            'UserEmailVerificationNotificationController' => 'auth/controllers/UserEmailVerificationNotificationController.stub',
+            'UserPasswordController' => 'auth/controllers/UserPasswordController.stub',
+            'UserProfileController' => 'auth/controllers/UserProfileController.stub',
+            'UserTwoFactorAuthenticationController' => 'auth/controllers/UserTwoFactorAuthenticationController.stub',
         ];
 
         foreach ($controllers as $controller => $stub) {
             $this->writeFile(
                 path: $basePath.'/app/Http/Controllers/'.$controller.'.php',
-                content: $this->stub($stub),
+                content: $this->authStub($stub, $basePath),
                 overwrite: $overwrite,
                 written: $written,
                 skipped: $skipped,
@@ -901,11 +937,77 @@ final readonly class InstallAxiomAction
     ): void {
         $requests = [
             'CreateSessionRequest' => 'auth/requests/CreateSessionRequest.stub',
+            'CreateUserEmailResetNotificationRequest' => 'auth/requests/CreateUserEmailResetNotificationRequest.stub',
+            'CreateUserPasswordRequest' => 'auth/requests/CreateUserPasswordRequest.stub',
+            'CreateUserRequest' => 'auth/requests/CreateUserRequest.stub',
+            'DeleteUserRequest' => 'auth/requests/DeleteUserRequest.stub',
+            'ShowUserTwoFactorAuthenticationRequest' => 'auth/requests/ShowUserTwoFactorAuthenticationRequest.stub',
+            'UpdateEmailVerificationRequest' => 'auth/requests/UpdateEmailVerificationRequest.stub',
+            'UpdateUserPasswordRequest' => 'auth/requests/UpdateUserPasswordRequest.stub',
+            'UpdateUserRequest' => 'auth/requests/UpdateUserRequest.stub',
         ];
 
         foreach ($requests as $request => $stub) {
             $this->writeFile(
                 path: $basePath.'/app/Http/Requests/'.$request.'.php',
+                content: $this->stub($stub),
+                overwrite: $overwrite,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+        }
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeAuthActions(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $actions = [
+            'CreateUser' => 'auth/actions/CreateUser.stub',
+            'CreateUserEmailResetNotification' => 'auth/actions/CreateUserEmailResetNotification.stub',
+            'CreateUserEmailVerificationNotification' => 'auth/actions/CreateUserEmailVerificationNotification.stub',
+            'CreateUserPassword' => 'auth/actions/CreateUserPassword.stub',
+            'DeleteUser' => 'auth/actions/DeleteUser.stub',
+            'UpdateUser' => 'auth/actions/UpdateUser.stub',
+            'UpdateUserPassword' => 'auth/actions/UpdateUserPassword.stub',
+        ];
+
+        foreach ($actions as $action => $stub) {
+            $this->writeFile(
+                path: $basePath.'/app/Actions/'.$action.'.php',
+                content: $this->stub($stub),
+                overwrite: $overwrite,
+                written: $written,
+                skipped: $skipped,
+                basePath: $basePath,
+            );
+        }
+    }
+
+    /**
+     * @param  list<string>  &$written
+     * @param  list<string>  &$skipped
+     */
+    private function writeAuthRules(
+        string $basePath,
+        bool $overwrite,
+        array &$written,
+        array &$skipped,
+    ): void {
+        $rules = [
+            'ValidEmail' => 'auth/rules/ValidEmail.stub',
+        ];
+
+        foreach ($rules as $rule => $stub) {
+            $this->writeFile(
+                path: $basePath.'/app/Rules/'.$rule.'.php',
                 content: $this->stub($stub),
                 overwrite: $overwrite,
                 written: $written,

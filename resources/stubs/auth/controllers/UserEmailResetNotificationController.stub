@@ -15,7 +15,7 @@ final readonly class UserEmailResetNotificationController
 {
     public function create(Request $request): Response
     {
-        return Inertia::render('user-email-reset-notification/Create', [
+        return Inertia::render('{{ userEmailResetNotificationCreatePage }}', [
             'status' => $request->session()->get('status'),
         ]);
     }
