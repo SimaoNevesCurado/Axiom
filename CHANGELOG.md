@@ -2,6 +2,10 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.22 - 2026-04-28
+
+- fix the Vue reset password page stub to submit through the generated `password.store` Wayfinder route instead of importing a missing `password.update` export
+
 ## 0.3.21 - 2026-04-28
 
 - migrate legacy Fortify starter auth providers and config files when switching to app-managed auth, instead of leaving Fortify route-generating features enabled
