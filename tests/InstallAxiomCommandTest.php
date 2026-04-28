@@ -72,6 +72,7 @@ it('installs the selected presets non-interactively', function () {
             ->and($composer['require-dev'])->toHaveKey('larastan/larastan')
             ->and($composer['require-dev'])->toHaveKey('rector/rector')
             ->and($composer['require-dev'])->toHaveKey('barryvdh/laravel-debugbar')
+            ->and($composer['require-dev']['barryvdh/laravel-debugbar'])->toBe('^4.2.6')
             ->and($package['devDependencies'])->toHaveKey('oxlint')
             ->and($package['devDependencies'])->toHaveKey('concurrently')
             ->and($package['devDependencies'])->toHaveKey('prettier');

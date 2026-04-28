@@ -1154,7 +1154,7 @@ final readonly class InstallAxiomAction
             return;
         }
 
-        $dependencies = $this->composerDevDependencies($selections);
+        $dependencies = $this->composerDevDependencies($selections, $composer);
 
         $hasChanges = false;
 
@@ -1263,9 +1263,10 @@ final readonly class InstallAxiomAction
     }
 
     /**
+     * @param  array<string, mixed>  $composer
      * @return array<string, string>
      */
-    private function composerDevDependencies(InstallSelections $selections): array
+    private function composerDevDependencies(InstallSelections $selections, array $composer = []): array
     {
         $dependencies = [];
         $installPhpStan = $selections->installPhpQualityDependencies || $selections->installPhpStan;
@@ -1287,12 +1288,12 @@ final readonly class InstallAxiomAction
             $dependencies['laravel/pint'] = '^1.29.0';
         }
 
-        if ($installTypeCoverage) {
+        if ($installTypeCoverage && ! $this->composerRequiresPackage($composer, 'laravel/pao')) {
             $dependencies['pestphp/pest-plugin-type-coverage'] = '^4.0.3';
         }
 
         if ($selections->debugTool === DebugToolPreset::Debugbar) {
-            $dependencies['barryvdh/laravel-debugbar'] = '^3.0';
+            $dependencies['barryvdh/laravel-debugbar'] = '^4.2.6';
         }
 
         if ($selections->debugTool === DebugToolPreset::Telescope) {
@@ -1302,6 +1303,18 @@ final readonly class InstallAxiomAction
         ksort($dependencies);
 
         return $dependencies;
+    }
+
+    /**
+     * @param  array<string, mixed>  $composer
+     */
+    private function composerRequiresPackage(array $composer, string $package): bool
+    {
+        $require = $composer['require'] ?? [];
+        $requireDev = $composer['require-dev'] ?? [];
+
+        return (is_array($require) && array_key_exists($package, $require))
+            || (is_array($requireDev) && array_key_exists($package, $requireDev));
     }
 
     /**

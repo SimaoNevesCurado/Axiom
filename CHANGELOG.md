@@ -2,6 +2,11 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.18 - 2026-04-28
+
+- require the Laravel 11/12/13 compatible Debugbar line when installing the Debugbar preset, avoiding old Illuminate and `psr/simple-cache` solver conflicts
+- skip Pest type coverage tooling when the host project already requires `laravel/pao`, preserving the app's existing test dependency strategy
+
 ## 0.3.17 - 2026-04-28
 
 - restore the app-managed auth scaffold to the full backend auth route set in `routes/web.php`, including register, password reset, email verification, profile, appearance, and two-factor entry points

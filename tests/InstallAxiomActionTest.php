@@ -664,7 +664,58 @@ it('adds php quality dependencies to composer json when requested', function () 
         expect($composer['require-dev'])->toHaveKey('larastan/larastan')
             ->and($composer['require-dev'])->toHaveKey('rector/rector')
             ->and($composer['require-dev'])->toHaveKey('phpstan/phpstan')
+            ->and($composer['require-dev'])->toHaveKey('pestphp/pest-plugin-type-coverage')
             ->and($composer['require-dev']['pestphp/pest'])->toBe('^4.4.3');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('does not add pest type coverage when laravel pao is installed', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/pao' => '^1.0.6',
+        ],
+        'require-dev' => [
+            'pestphp/pest-plugin-laravel' => '^4.1',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                installPhpQualityDependencies: true,
+                installFrontendQualityDependencies: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        /** @var array<string, mixed> $composer */
+        $composer = json_decode((string) file_get_contents($basePath.'/composer.json'), true);
+
+        expect($composer['require-dev'])->toHaveKey('larastan/larastan')
+            ->and($composer['require-dev'])->toHaveKey('phpstan/phpstan')
+            ->and($composer['require-dev'])->not->toHaveKey('pestphp/pest-plugin-type-coverage')
+            ->and($composer['require']['laravel/pao'])->toBe('^1.0.6')
+            ->and($composer['require-dev']['pestphp/pest-plugin-laravel'])->toBe('^4.1');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
@@ -710,6 +761,7 @@ it('adds only selected php tooling and debugbar when requested', function () {
             ->and($composer['require-dev'])->toHaveKey('driftingly/rector-laravel')
             ->and($composer['require-dev'])->toHaveKey('rector/rector')
             ->and($composer['require-dev'])->toHaveKey('barryvdh/laravel-debugbar')
+            ->and($composer['require-dev']['barryvdh/laravel-debugbar'])->toBe('^4.2.6')
             ->and($composer['require-dev'])->not->toHaveKey('laravel/pint')
             ->and($composer['require-dev'])->not->toHaveKey('laravel/telescope');
     } finally {
