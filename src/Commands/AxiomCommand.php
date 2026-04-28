@@ -331,6 +331,18 @@ final class AxiomCommand extends Command
             return true;
         }
 
+        if ($this->hasAppManagedAuthRoutes()) {
+            return false;
+        }
+
+        $authRoutesOption = $this->option('auth-routes');
+        $explicitAppManagedRoutes = is_string($authRoutesOption)
+            && $authRoutesOption === AuthRoutesPreset::AppManaged->value;
+
+        if ($this->hasFortifyInstalled() && ($explicitAppManagedRoutes || $this->input->isInteractive())) {
+            return true;
+        }
+
         if ($this->hasAuthScaffold()) {
             return false;
         }
@@ -428,6 +440,28 @@ final class AxiomCommand extends Command
             || str_contains($webRoutes, "->name('login.store')")
             || str_contains($webRoutes, "->name('register')")
             || str_contains($webRoutes, "->name('password.request')");
+    }
+
+    private function hasAppManagedAuthRoutes(): bool
+    {
+        foreach (['routes/web.php', 'routes/auth.php'] as $routeFile) {
+            $path = base_path($routeFile);
+
+            if (! file_exists($path)) {
+                continue;
+            }
+
+            $routes = (string) file_get_contents($path);
+
+            if (str_contains($routes, "->name('login')")
+                || str_contains($routes, "->name('login.store')")
+                || str_contains($routes, "->name('register')")
+                || str_contains($routes, "->name('password.request')")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function resolveDebugTool(): DebugToolPreset

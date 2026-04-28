@@ -2,6 +2,14 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.19 - 2026-04-28
+
+- refactor the installer from a monolithic `InstallAxiomAction` into a small orchestration action backed by focused install actions
+- add typed install context, frontend stack detection, auth route definitions, and route middleware enums for clearer installer flow
+- add a dedicated app-managed auth installer flow with separate actions for Fortify route disabling, auth routes, controllers, requests, pages, tests, actions, and rules
+- publish React and Vue starter-kit auth page stubs plus starter-kit auth tests when app-managed auth scaffold is installed
+- disable Fortify package routes from `FortifyServiceProvider::register()` in app-managed mode to avoid duplicate auth routes
+
 ## 0.3.18 - 2026-04-28
 
 - require the Laravel 11/12/13 compatible Debugbar line when installing the Debugbar preset, avoiding old Illuminate and `psr/simple-cache` solver conflicts

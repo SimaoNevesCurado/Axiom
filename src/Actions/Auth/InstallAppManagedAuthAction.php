@@ -1,0 +1,61 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SimaoCurado\Axiom\Actions\Auth;
+
+use Illuminate\Filesystem\Filesystem;
+use SimaoCurado\Axiom\Support\InstallContext;
+
+final readonly class InstallAppManagedAuthAction
+{
+    private DetectFortifyAction $detectFortify;
+
+    private DisableFortifyRoutesAction $disableFortifyRoutes;
+
+    private PublishAuthActionsAction $publishActions;
+
+    private PublishAuthControllersAction $publishControllers;
+
+    private PublishAuthPagesAction $publishPages;
+
+    private PublishAuthRequestsAction $publishRequests;
+
+    private PublishAuthRoutesAction $publishRoutes;
+
+    private PublishAuthRulesAction $publishRules;
+
+    private PublishAuthTestsAction $publishTests;
+
+    private PublishFortifyScaffoldAction $publishFortifyScaffold;
+
+    public function __construct(Filesystem $files)
+    {
+        $this->detectFortify = new DetectFortifyAction($files);
+        $this->disableFortifyRoutes = new DisableFortifyRoutesAction($files);
+        $this->publishActions = new PublishAuthActionsAction($files);
+        $this->publishControllers = new PublishAuthControllersAction($files);
+        $this->publishPages = new PublishAuthPagesAction($files);
+        $this->publishRequests = new PublishAuthRequestsAction($files);
+        $this->publishRoutes = new PublishAuthRoutesAction($files);
+        $this->publishRules = new PublishAuthRulesAction($files);
+        $this->publishTests = new PublishAuthTestsAction($files);
+        $this->publishFortifyScaffold = new PublishFortifyScaffoldAction($files);
+    }
+
+    public function handle(InstallContext $context): void
+    {
+        if ($this->detectFortify->handle($context->basePath)) {
+            $this->publishFortifyScaffold->handle($context);
+            $this->disableFortifyRoutes->handle($context);
+        }
+
+        $this->publishActions->handle($context);
+        $this->publishRequests->handle($context);
+        $this->publishRules->handle($context);
+        $this->publishControllers->handle($context);
+        $this->publishPages->handle($context);
+        $this->publishTests->handle($context);
+        $this->publishRoutes->handle($context);
+    }
+}

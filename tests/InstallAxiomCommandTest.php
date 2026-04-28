@@ -113,6 +113,63 @@ PHP);
     }
 });
 
+it('installs app managed auth when explicitly selected in a Fortify project', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+    $originalBasePath = base_path();
+
+    mkdir($basePath, 0777, true);
+    mkdir($basePath.'/app/Providers', 0777, true);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    mkdir($basePath.'/config', 0777, true);
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+            'laravel/fortify' => '^1.36.1',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'dependencies' => [
+            '@inertiajs/vue3' => '^3.0',
+            'vue' => '^3.5',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n    App\\Providers\\FortifyServiceProvider::class,\n];\n");
+    file_put_contents($basePath.'/config/fortify.php', "<?php\n\nreturn ['views' => true];\n");
+    file_put_contents($basePath.'/app/Providers/FortifyServiceProvider.php', "<?php\n\nnamespace App\\Providers;\n\nfinal class FortifyServiceProvider {}\n");
+    file_put_contents($basePath.'/routes/web.php', <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+Route::get('/', fn () => Inertia::render('Welcome'))->name('home');
+PHP);
+
+    app()->setBasePath($basePath);
+
+    try {
+        $this->artisan('axiom:install', [
+            '--auth-routes' => 'app',
+            '--no-interaction' => true,
+        ])->assertExitCode(0);
+
+        $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
+
+        expect($basePath.'/app/Http/Controllers/SessionController.php')->toBeFile()
+            ->and($basePath.'/app/Actions/CreateUser.php')->toBeFile()
+            ->and($webRoutes)->toContain('// Axiom app-managed auth routes...')
+            ->and($webRoutes)->toContain("Route::get('login', [SessionController::class, 'create'])")
+            ->and($webRoutes)->toContain("Route::get('settings/appearance', fn () => Inertia::render('appearance/Update'))");
+    } finally {
+        app()->setBasePath($originalBasePath);
+        deleteDirectoryForInstallCommandTest($basePath);
+    }
+});
+
 function deleteDirectoryForInstallCommandTest(string $path): void
 {
     if (! is_dir($path)) {

@@ -1081,6 +1081,9 @@ PHP);
         $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
         $fortifyConfig = (string) file_get_contents($basePath.'/config/fortify.php');
         $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
+        $settingsRoutePosition = strpos($webRoutes, "Route::delete('user', [UserController::class, 'destroy'])");
+        $guestRoutePosition = strpos($webRoutes, "Route::get('register', [UserController::class, 'create'])");
+        $verificationRoutePosition = strpos($webRoutes, "Route::get('verify-email', [UserEmailVerificationNotificationController::class, 'create'])");
 
         expect($result->written)->toContain('config/fortify.php')
             ->toContain('app/Providers/FortifyServiceProvider.php')
@@ -1091,15 +1094,20 @@ PHP);
             ->and($fortifyProvider)->toContain('use Laravel\\Fortify\\Fortify;')
             ->and($fortifyProvider)->toContain("Fortify::twoFactorChallengeView(fn () => Inertia::render('user-two-factor-authentication-challenge/Show'));")
             ->and($fortifyProvider)->toContain("Fortify::confirmPasswordView(fn () => Inertia::render('user-password-confirmation/Create'));")
-            ->and($fortifyProvider)->not->toContain('Fortify::ignoreRoutes();')
+            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();')
             ->and($fortifyConfig)->toContain("'views' => true,")
             ->and($webRoutes)->toContain('// Axiom app-managed auth routes...')
+            ->and($webRoutes)->toContain('    // User...')
+            ->and($webRoutes)->toContain('    // User Profile...')
+            ->and($webRoutes)->toContain('    // Session...')
             ->and($webRoutes)->toContain("Route::get('login', [SessionController::class, 'create'])")
             ->and($webRoutes)->toContain("Route::post('login', [SessionController::class, 'store'])")
             ->and($webRoutes)->toContain("Route::post('logout', [SessionController::class, 'destroy'])")
             ->and($webRoutes)->toContain("Route::get('register', [UserController::class, 'create'])")
             ->and($webRoutes)->toContain("Route::get('settings/profile', [UserProfileController::class, 'edit'])")
             ->and($webRoutes)->toContain("Route::get('settings/appearance', fn () => Inertia::render('appearance/Update'))")
+            ->and($settingsRoutePosition)->toBeLessThan($guestRoutePosition)
+            ->and($guestRoutePosition)->toBeLessThan($verificationRoutePosition)
             ->and($webRoutes)->not->toContain('// Axiom Fortify compatibility routes...');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
@@ -1210,11 +1218,11 @@ PHP);
         $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
         $fortifyConfig = (string) file_get_contents($basePath.'/config/fortify.php');
 
-        expect($result->written)->not->toContain('app/Providers/FortifyServiceProvider.php')
+        expect($result->written)->toContain('app/Providers/FortifyServiceProvider.php')
             ->and($result->written)->not->toContain('config/fortify.php')
             ->and($fortifyProvider)->toContain("Fortify::twoFactorChallengeView(fn () => Inertia::render('user-two-factor-authentication-challenge/Show'));")
             ->and($fortifyProvider)->toContain("Fortify::confirmPasswordView(fn () => Inertia::render('user-password-confirmation/Create'));")
-            ->and($fortifyProvider)->not->toContain('Fortify::ignoreRoutes();')
+            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();')
             ->and($fortifyConfig)->toContain("'views' => true,");
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
@@ -1282,7 +1290,7 @@ PHP);
         expect($fortifyProvider)->toContain('final class FortifyServiceProvider extends ServiceProvider')
             ->and($fortifyProvider)->toContain("Fortify::twoFactorChallengeView(fn () => Inertia::render('user-two-factor-authentication-challenge/Show'));")
             ->and($fortifyProvider)->toContain("Fortify::confirmPasswordView(fn () => Inertia::render('user-password-confirmation/Create'));")
-            ->and($fortifyProvider)->not->toContain('Fortify::ignoreRoutes();');
+            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
@@ -1658,7 +1666,7 @@ it('installs app-managed auth scaffold when explicitly requested', function () {
             ->and($webRoutes)->toContain('// Axiom app-managed auth routes...')
             ->and($webRoutes)->toContain("Route::get('verify-email', [UserEmailVerificationNotificationController::class, 'create'])")
             ->and($fortifyProvider)->toContain("Fortify::twoFactorChallengeView(fn () => Inertia::render('user-two-factor-authentication-challenge/Show'));")
-            ->and($fortifyProvider)->not->toContain('Fortify::ignoreRoutes();');
+            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
