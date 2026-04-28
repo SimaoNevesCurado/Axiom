@@ -2,6 +2,13 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.21 - 2026-04-28
+
+- migrate legacy Fortify starter auth providers and config files when switching to app-managed auth, instead of leaving Fortify route-generating features enabled
+- remove legacy Fortify auth pages from `resources/js/pages/auth` when publishing the app-managed auth pages
+- avoid publishing starter-kit settings pages into apps that already have `routes/settings.php` or `resources/js/pages/settings`, preventing missing Wayfinder controller imports
+- keep app-managed auth route generation compatible with existing Laravel starter settings routes
+
 ## 0.3.20 - 2026-04-28
 
 - keep the published `FortifyServiceProvider` aligned with the starter kits by leaving `register()` empty in app-managed auth mode

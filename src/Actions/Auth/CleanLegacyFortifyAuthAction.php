@@ -24,6 +24,13 @@ final readonly class CleanLegacyFortifyAuthAction
             'app/Actions/Fortify/CreateNewUser.php',
             'app/Actions/Fortify/ResetUserPassword.php',
             'app/Actions/Fortify/.gitkeep',
+            'resources/js/pages/auth/ConfirmPassword.vue',
+            'resources/js/pages/auth/ForgotPassword.vue',
+            'resources/js/pages/auth/Login.vue',
+            'resources/js/pages/auth/Register.vue',
+            'resources/js/pages/auth/ResetPassword.vue',
+            'resources/js/pages/auth/TwoFactorChallenge.vue',
+            'resources/js/pages/auth/VerifyEmail.vue',
         ];
 
         foreach ($paths as $relativePath) {
@@ -40,6 +47,13 @@ final readonly class CleanLegacyFortifyAuthAction
         if ($this->files->isDirectory($legacyDirectory) && $this->isEmptyDirectory($legacyDirectory)) {
             $this->files->deleteDirectory($legacyDirectory);
             $context->recordWritten('app/Actions/Fortify');
+        }
+
+        $legacyPagesDirectory = $context->basePath.'/resources/js/pages/auth';
+
+        if ($this->files->isDirectory($legacyPagesDirectory) && $this->isEmptyDirectory($legacyPagesDirectory)) {
+            $this->files->deleteDirectory($legacyPagesDirectory);
+            $context->recordWritten('resources/js/pages/auth');
         }
     }
 

@@ -13,6 +13,8 @@ use SimaoCurado\Axiom\Support\InstallContext;
 
 final readonly class PublishAuthPagesAction
 {
+    private Filesystem $files;
+
     private DetectFrontendStackAction $detectFrontendStack;
 
     private ResolveStubPathAction $stubs;
@@ -21,6 +23,7 @@ final readonly class PublishAuthPagesAction
 
     public function __construct(Filesystem $files)
     {
+        $this->files = $files;
         $this->detectFrontendStack = new DetectFrontendStackAction($files);
         $this->stubs = new ResolveStubPathAction($files);
         $this->writeFile = new WriteFileAction($files);
@@ -30,7 +33,7 @@ final readonly class PublishAuthPagesAction
     {
         $frontendStack = $this->detectFrontendStack->handle($context->basePath);
 
-        foreach ($this->pageStubs($frontendStack) as $target => $stub) {
+        foreach ($this->pageStubs($context, $frontendStack) as $target => $stub) {
             $this->writeFile->handle($context, $target, $this->stubs->contents($stub));
         }
     }
@@ -38,9 +41,9 @@ final readonly class PublishAuthPagesAction
     /**
      * @return array<string, string>
      */
-    private function pageStubs(FrontendStack $frontendStack): array
+    private function pageStubs(InstallContext $context, FrontendStack $frontendStack): array
     {
-        return match ($frontendStack) {
+        $pages = match ($frontendStack) {
             FrontendStack::React => [
                 'resources/js/pages/appearance/update.tsx' => 'auth/pages/react/appearance/update.tsx.stub',
                 'resources/js/pages/session/create.tsx' => 'auth/pages/react/session/create.tsx.stub',
@@ -69,5 +72,26 @@ final readonly class PublishAuthPagesAction
             ],
             FrontendStack::None => [],
         };
+
+        if (! $this->hasExistingSettingsRoutes($context)) {
+            return $pages;
+        }
+
+        unset(
+            $pages['resources/js/pages/appearance/update.tsx'],
+            $pages['resources/js/pages/user-password/edit.tsx'],
+            $pages['resources/js/pages/user-profile/edit.tsx'],
+            $pages['resources/js/pages/appearance/Update.vue'],
+            $pages['resources/js/pages/user-password/Edit.vue'],
+            $pages['resources/js/pages/user-profile/Edit.vue'],
+        );
+
+        return $pages;
+    }
+
+    private function hasExistingSettingsRoutes(InstallContext $context): bool
+    {
+        return $this->files->exists($context->basePath.'/routes/settings.php')
+            || $this->files->isDirectory($context->basePath.'/resources/js/pages/settings');
     }
 }

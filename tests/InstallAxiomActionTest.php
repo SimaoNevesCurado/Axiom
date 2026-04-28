@@ -2026,6 +2026,128 @@ PHP);
     }
 });
 
+it('migrates legacy Fortify starter auth files when app-managed auth is installed', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+            'laravel/fortify' => '^1.36.1',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'dependencies' => [
+            '@inertiajs/vue3' => '^3.0',
+            'vue' => '^3.5',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/app/Actions/Fortify', 0777, true);
+    file_put_contents($basePath.'/app/Actions/Fortify/CreateNewUser.php', "<?php\n\n");
+    file_put_contents($basePath.'/app/Actions/Fortify/ResetUserPassword.php', "<?php\n\n");
+    mkdir($basePath.'/app/Providers', 0777, true);
+    file_put_contents($basePath.'/app/Providers/FortifyServiceProvider.php', <<<'PHP'
+<?php
+
+namespace App\Providers;
+
+use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Fortify\ResetUserPassword;
+use Illuminate\Support\ServiceProvider;
+use Inertia\Inertia;
+use Laravel\Fortify\Features;
+use Laravel\Fortify\Fortify;
+
+class FortifyServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        //
+    }
+
+    public function boot(): void
+    {
+        Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+        Fortify::loginView(fn () => Inertia::render('auth/Login', [
+            'canRegister' => Features::enabled(Features::registration()),
+        ]));
+        Fortify::registerView(fn () => Inertia::render('auth/Register'));
+    }
+}
+PHP);
+    mkdir($basePath.'/config', 0777, true);
+    file_put_contents($basePath.'/config/fortify.php', <<<'PHP'
+<?php
+
+use Laravel\Fortify\Features;
+
+return [
+    'views' => true,
+    'features' => [
+        Features::registration(),
+        Features::resetPasswords(),
+        Features::emailVerification(),
+        Features::twoFactorAuthentication([
+            'confirm' => true,
+            'confirmPassword' => true,
+        ]),
+    ],
+];
+PHP);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n    App\\Providers\\FortifyServiceProvider::class,\n];\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\n");
+    file_put_contents($basePath.'/routes/settings.php', "<?php\n\n");
+    mkdir($basePath.'/resources/js/pages/auth', 0777, true);
+    file_put_contents($basePath.'/resources/js/pages/auth/Login.vue', "<template />\n");
+    file_put_contents($basePath.'/resources/js/pages/auth/Register.vue', "<template />\n");
+    mkdir($basePath.'/resources/js/pages/settings', 0777, true);
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
+        $fortifyConfig = (string) file_get_contents($basePath.'/config/fortify.php');
+
+        expect($result->written)->toContain('app/Providers/FortifyServiceProvider.php')
+            ->toContain('config/fortify.php')
+            ->toContain('app/Actions/Fortify/CreateNewUser.php')
+            ->toContain('resources/js/pages/auth/Login.vue')
+            ->and($fortifyProvider)->toContain('final class FortifyServiceProvider extends ServiceProvider')
+            ->and($fortifyProvider)->not->toContain('App\\Actions\\Fortify')
+            ->and($fortifyProvider)->not->toContain('Fortify::loginView')
+            ->and($fortifyProvider)->not->toContain('Features::enabled')
+            ->and($fortifyConfig)->toContain('// Features::registration(),')
+            ->and($fortifyConfig)->toContain('// Features::resetPasswords(),')
+            ->and($fortifyConfig)->toContain('// Features::emailVerification(),')
+            ->and(file_exists($basePath.'/app/Actions/Fortify'))->toBeFalse()
+            ->and(file_exists($basePath.'/resources/js/pages/auth'))->toBeFalse()
+            ->and(file_exists($basePath.'/resources/js/pages/user-profile/Edit.vue'))->toBeFalse()
+            ->and(file_exists($basePath.'/resources/js/pages/user-password/Edit.vue'))->toBeFalse();
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 function deleteDirectoryForInstallActionTest(string $path): void
 {
     if (! is_dir($path)) {
