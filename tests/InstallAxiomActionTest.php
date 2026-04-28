@@ -1961,6 +1961,75 @@ it('uses password store routes in vue reset password pages', function () {
     }
 });
 
+it('repairs already published vue reset password pages without overwriting the page', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+        'dependencies' => [
+            '@inertiajs/vue3' => '^3.0',
+            'vue' => '^3.5',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+            'laravel/fortify' => '^1.36.1',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\n");
+    mkdir($basePath.'/resources/js/pages/user-password', 0777, true);
+    file_put_contents($basePath.'/resources/js/pages/user-password/Create.vue', <<<'VUE'
+<script setup lang="ts">
+import { update } from '@/routes/password';
+
+const localState = 'keep me';
+</script>
+
+<template>
+    <Form v-bind="update.form()">
+        {{ localState }}
+    </Form>
+</template>
+VUE);
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        $resetPasswordPage = (string) file_get_contents($basePath.'/resources/js/pages/user-password/Create.vue');
+
+        expect($result->written)->toContain('resources/js/pages/user-password/Create.vue')
+            ->and($resetPasswordPage)->toContain("import { store } from '@/routes/password';")
+            ->and($resetPasswordPage)->toContain('v-bind="store.form()"')
+            ->and($resetPasswordPage)->toContain("const localState = 'keep me';")
+            ->and($resetPasswordPage)->not->toContain("import { update } from '@/routes/password';")
+            ->and($resetPasswordPage)->not->toContain('v-bind="update.form()"');
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 it('does not publish frontend auth assets even when frontend structure exists', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 

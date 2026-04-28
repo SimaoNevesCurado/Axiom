@@ -29,6 +29,8 @@ final readonly class InstallAppManagedAuthAction
 
     private PublishFortifyScaffoldAction $publishFortifyScaffold;
 
+    private RepairPublishedAuthPagesAction $repairPublishedAuthPages;
+
     public function __construct(Filesystem $files)
     {
         $this->detectFortify = new DetectFortifyAction($files);
@@ -41,6 +43,7 @@ final readonly class InstallAppManagedAuthAction
         $this->publishRules = new PublishAuthRulesAction($files);
         $this->publishTests = new PublishAuthTestsAction($files);
         $this->publishFortifyScaffold = new PublishFortifyScaffoldAction($files);
+        $this->repairPublishedAuthPages = new RepairPublishedAuthPagesAction($files);
     }
 
     public function handle(InstallContext $context): void
@@ -55,6 +58,7 @@ final readonly class InstallAppManagedAuthAction
         $this->publishRules->handle($context);
         $this->publishControllers->handle($context);
         $this->publishPages->handle($context);
+        $this->repairPublishedAuthPages->handle($context);
         $this->publishTests->handle($context);
         $this->publishRoutes->handle($context);
     }

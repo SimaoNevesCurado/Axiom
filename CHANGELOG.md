@@ -2,6 +2,10 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.23 - 2026-04-29
+
+- repair already published Vue reset password pages by migrating the stale `password.update` Wayfinder import to `password.store` without overwriting local page changes
+
 ## 0.3.22 - 2026-04-28
 
 - fix the Vue reset password page stub to submit through the generated `password.store` Wayfinder route instead of importing a missing `password.update` export
