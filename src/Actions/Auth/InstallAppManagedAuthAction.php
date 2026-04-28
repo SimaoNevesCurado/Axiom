@@ -11,11 +11,11 @@ final readonly class InstallAppManagedAuthAction
 {
     private DetectFortifyAction $detectFortify;
 
-    private DisableFortifyRoutesAction $disableFortifyRoutes;
-
     private PublishAuthActionsAction $publishActions;
 
     private PublishAuthControllersAction $publishControllers;
+
+    private CleanLegacyFortifyAuthAction $cleanLegacyFortifyAuth;
 
     private PublishAuthPagesAction $publishPages;
 
@@ -32,7 +32,7 @@ final readonly class InstallAppManagedAuthAction
     public function __construct(Filesystem $files)
     {
         $this->detectFortify = new DetectFortifyAction($files);
-        $this->disableFortifyRoutes = new DisableFortifyRoutesAction($files);
+        $this->cleanLegacyFortifyAuth = new CleanLegacyFortifyAuthAction($files);
         $this->publishActions = new PublishAuthActionsAction($files);
         $this->publishControllers = new PublishAuthControllersAction($files);
         $this->publishPages = new PublishAuthPagesAction($files);
@@ -47,9 +47,9 @@ final readonly class InstallAppManagedAuthAction
     {
         if ($this->detectFortify->handle($context->basePath)) {
             $this->publishFortifyScaffold->handle($context);
-            $this->disableFortifyRoutes->handle($context);
         }
 
+        $this->cleanLegacyFortifyAuth->handle($context);
         $this->publishActions->handle($context);
         $this->publishRequests->handle($context);
         $this->publishRules->handle($context);

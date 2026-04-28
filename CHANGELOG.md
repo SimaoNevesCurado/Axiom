@@ -2,6 +2,13 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 0.3.20 - 2026-04-28
+
+- keep the published `FortifyServiceProvider` aligned with the starter kits by leaving `register()` empty in app-managed auth mode
+- keep Fortify route features disabled through the published `config/fortify.php` feature list instead of injecting `Fortify::ignoreRoutes()`
+- remove legacy `app/Actions/Fortify` auth action files when installing the new app-managed auth actions
+- remove the starter Welcome route `canRegister` Fortify feature flag when app-managed auth routes are installed
+
 ## 0.3.19 - 2026-04-28
 
 - refactor the installer from a monolithic `InstallAxiomAction` into a small orchestration action backed by focused install actions

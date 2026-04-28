@@ -1094,7 +1094,7 @@ PHP);
             ->and($fortifyProvider)->toContain('use Laravel\\Fortify\\Fortify;')
             ->and($fortifyProvider)->toContain("Fortify::twoFactorChallengeView(fn () => Inertia::render('user-two-factor-authentication-challenge/Show'));")
             ->and($fortifyProvider)->toContain("Fortify::confirmPasswordView(fn () => Inertia::render('user-password-confirmation/Create'));")
-            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();')
+            ->and($fortifyProvider)->not->toContain('Fortify::ignoreRoutes();')
             ->and($fortifyConfig)->toContain("'views' => true,")
             ->and($webRoutes)->toContain('// Axiom app-managed auth routes...')
             ->and($webRoutes)->toContain('    // User...')
@@ -1218,11 +1218,11 @@ PHP);
         $fortifyProvider = (string) file_get_contents($basePath.'/app/Providers/FortifyServiceProvider.php');
         $fortifyConfig = (string) file_get_contents($basePath.'/config/fortify.php');
 
-        expect($result->written)->toContain('app/Providers/FortifyServiceProvider.php')
+        expect($result->written)->not->toContain('app/Providers/FortifyServiceProvider.php')
             ->and($result->written)->not->toContain('config/fortify.php')
             ->and($fortifyProvider)->toContain("Fortify::twoFactorChallengeView(fn () => Inertia::render('user-two-factor-authentication-challenge/Show'));")
             ->and($fortifyProvider)->toContain("Fortify::confirmPasswordView(fn () => Inertia::render('user-password-confirmation/Create'));")
-            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();')
+            ->and($fortifyProvider)->not->toContain('Fortify::ignoreRoutes();')
             ->and($fortifyConfig)->toContain("'views' => true,");
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
@@ -1290,7 +1290,7 @@ PHP);
         expect($fortifyProvider)->toContain('final class FortifyServiceProvider extends ServiceProvider')
             ->and($fortifyProvider)->toContain("Fortify::twoFactorChallengeView(fn () => Inertia::render('user-two-factor-authentication-challenge/Show'));")
             ->and($fortifyProvider)->toContain("Fortify::confirmPasswordView(fn () => Inertia::render('user-password-confirmation/Create'));")
-            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();');
+            ->and($fortifyProvider)->not->toContain('Fortify::ignoreRoutes();');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
@@ -1666,7 +1666,7 @@ it('installs app-managed auth scaffold when explicitly requested', function () {
             ->and($webRoutes)->toContain('// Axiom app-managed auth routes...')
             ->and($webRoutes)->toContain("Route::get('verify-email', [UserEmailVerificationNotificationController::class, 'create'])")
             ->and($fortifyProvider)->toContain("Fortify::twoFactorChallengeView(fn () => Inertia::render('user-two-factor-authentication-challenge/Show'));")
-            ->and($fortifyProvider)->toContain('Fortify::ignoreRoutes();');
+            ->and($fortifyProvider)->not->toContain('Fortify::ignoreRoutes();');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
@@ -1955,6 +1955,72 @@ it('does not publish frontend auth assets even when frontend structure exists', 
         expect(file_exists($basePath.'/resources/js/pages/session/Create.vue'))->toBeFalse()
             ->and(file_exists($basePath.'/resources/js/pages/user/Create.vue'))->toBeFalse()
             ->and(file_exists($basePath.'/resources/css/axiom-auth.css'))->toBeFalse();
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
+it('removes legacy Fortify action files and registration feature flags when installing app-managed auth', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/app/Actions/Fortify', 0777, true);
+    file_put_contents($basePath.'/app/Actions/Fortify/CreateNewUser.php', "<?php\n\n");
+    file_put_contents($basePath.'/app/Actions/Fortify/ResetUserPassword.php', "<?php\n\n");
+    file_put_contents($basePath.'/app/Actions/Fortify/.gitkeep', '');
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Support\Facades\Route;
+use Laravel\Fortify\Features;
+
+Route::inertia('/', 'Welcome', [
+    'canRegister' => Features::enabled(Features::registration()),
+])->name('home');
+PHP);
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
+
+        expect($result->written)->toContain('app/Actions/Fortify/CreateNewUser.php')
+            ->toContain('app/Actions/Fortify/ResetUserPassword.php')
+            ->toContain('app/Actions/Fortify/.gitkeep')
+            ->toContain('app/Actions/CreateUser.php')
+            ->and(file_exists($basePath.'/app/Actions/Fortify'))->toBeFalse()
+            ->and(file_exists($basePath.'/app/Actions/CreateUser.php'))->toBeTrue()
+            ->and($webRoutes)->toContain("Route::inertia('/', 'Welcome')->name('home');")
+            ->and($webRoutes)->not->toContain('canRegister')
+            ->and($webRoutes)->not->toContain('Features::registration')
+            ->and($webRoutes)->not->toContain('use Laravel\\Fortify\\Features;');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }
