@@ -227,7 +227,7 @@ final readonly class PublishAuthRoutesAction
             $currentRoutes[] = $definition->code;
         }
 
-        if ($currentMiddleware !== null && $currentRoutes !== []) {
+        if ($currentMiddleware !== null) {
             $blocks[] = $this->renderMiddlewareRouteGroup($currentMiddleware, $currentRoutes);
         }
 

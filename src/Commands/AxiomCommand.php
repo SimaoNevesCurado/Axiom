@@ -185,6 +185,7 @@ final class AxiomCommand extends Command
         $selection = multiselect(
             label: 'Choose an AI preset',
             options: [
+                AiGuidelinePreset::Boost->value => 'Boost preset (AGENTS.md)',
                 AiGuidelinePreset::Codex->value => 'Codex preset (AGENTS.md)',
                 AiGuidelinePreset::Claude->value => 'Claude preset (CLAUDE.md)',
                 AiGuidelinePreset::Gemini->value => 'Gemini preset (GEMINI.md)',

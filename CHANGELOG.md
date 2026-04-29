@@ -2,6 +2,15 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 1.0.0 - 2026-04-29
+
+- align the package with its first stable release by validating the installer flow, auth scaffold publishing, and release automation
+- fix `composer analyse` by pointing the package PHPStan config at the paths that actually exist in this repository
+- make `composer analyse` more reliable by giving PHPStan an explicit memory limit
+- align the declared PHP requirement with the tested support matrix by requiring PHP `^8.3`
+- expose the `boost` AI preset in the interactive installer so the default prompt selection is valid
+- document the current app-managed auth behavior more accurately in the README
+
 ## 0.3.23 - 2026-04-29
 
 - repair already published Vue reset password pages by migrating the stale `password.update` Wayfinder import to `password.store` without overwriting local page changes

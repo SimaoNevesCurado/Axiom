@@ -71,7 +71,7 @@ The installer can:
 - when no auth scaffold exists, ask whether auth scaffold should be installed
 - support non-interactive auth scaffold installation with `--install-auth`
 - when Fortify is installed, ask whether auth should use Fortify-managed routes or app-managed routes
-- when auth scaffold is installed in app-managed mode, publish the React/Vue starter-kit backend auth stubs and routes without publishing frontend auth pages or frontend auth dependencies
+- when auth scaffold is installed in app-managed mode, publish the React/Vue starter-kit backend auth stubs, routes, and matching Inertia auth pages without duplicating existing settings pages or adding frontend auth dependencies
 - when Fortify-managed mode is selected, leave existing Fortify files untouched
 - ask whether the project should use SSR and wire that into `composer dev`
 - create `app/Actions`, `app/Dto`, and `app/Enums`
