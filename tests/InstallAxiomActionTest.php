@@ -2083,6 +2083,75 @@ VUE);
     }
 });
 
+it('repairs already published react heading imports without overwriting local page changes', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+        'dependencies' => [
+            '@inertiajs/react' => '^2.0',
+            'react' => '^19.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+            'laravel/fortify' => '^1.36.1',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\n");
+    mkdir($basePath.'/resources/js/pages/user-two-factor-authentication', 0777, true);
+    file_put_contents($basePath.'/resources/js/pages/user-two-factor-authentication/show.tsx', <<<'TSX'
+import HeadingSmall from '@/components/heading-small';
+
+const keepMe = true;
+
+export default function TwoFactorAuthentication() {
+    return (
+        <HeadingSmall
+            title="Two-Factor Authentication"
+            description="Manage your two-factor authentication settings"
+        />
+    );
+}
+TSX);
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        $twoFactorPage = (string) file_get_contents($basePath.'/resources/js/pages/user-two-factor-authentication/show.tsx');
+
+        expect($result->written)->toContain('resources/js/pages/user-two-factor-authentication/show.tsx')
+            ->and($twoFactorPage)->toContain("import Heading from '@/components/heading';")
+            ->and($twoFactorPage)->toContain('variant="small"')
+            ->and($twoFactorPage)->toContain('const keepMe = true;')
+            ->and($twoFactorPage)->not->toContain("import HeadingSmall from '@/components/heading-small';");
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 it('does not publish frontend auth assets even when frontend structure exists', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 

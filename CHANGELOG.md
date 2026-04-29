@@ -2,6 +2,11 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 1.0.2 - 2026-04-29
+
+- align the React auth page stubs with the current starter naming by using `@/components/heading` plus `variant="small"` instead of the missing `@/components/heading-small`
+- repair already published React auth pages in place so rerunning the installer updates stale `HeadingSmall` imports without overwriting local page changes
+
 ## 1.0.1 - 2026-04-29
 
 - publish the Vue auth UI asset bundle required by the app-managed auth pages, including `InputError.vue`, `TextLink.vue`, `AuthLayout.vue`, and the base `components/ui/*` stubs
