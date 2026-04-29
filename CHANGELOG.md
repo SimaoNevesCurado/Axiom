@@ -2,6 +2,10 @@
 
 All notable changes to `axiom` will be documented in this file.
 
+## 1.0.1 - 2026-04-29
+
+- publish the Vue auth UI asset bundle required by the app-managed auth pages, including `InputError.vue`, `TextLink.vue`, `AuthLayout.vue`, and the base `components/ui/*` stubs
+
 ## 1.0.0 - 2026-04-29
 
 - align the package with its first stable release by validating the installer flow, auth scaffold publishing, and release automation

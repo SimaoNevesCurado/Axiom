@@ -19,6 +19,8 @@ final readonly class InstallAppManagedAuthAction
 
     private PublishAuthPagesAction $publishPages;
 
+    private PublishAuthUiAssetsAction $publishUiAssets;
+
     private PublishAuthRequestsAction $publishRequests;
 
     private PublishAuthRoutesAction $publishRoutes;
@@ -38,6 +40,7 @@ final readonly class InstallAppManagedAuthAction
         $this->publishActions = new PublishAuthActionsAction($files);
         $this->publishControllers = new PublishAuthControllersAction($files);
         $this->publishPages = new PublishAuthPagesAction($files);
+        $this->publishUiAssets = new PublishAuthUiAssetsAction($files);
         $this->publishRequests = new PublishAuthRequestsAction($files);
         $this->publishRoutes = new PublishAuthRoutesAction($files);
         $this->publishRules = new PublishAuthRulesAction($files);
@@ -57,6 +60,7 @@ final readonly class InstallAppManagedAuthAction
         $this->publishRequests->handle($context);
         $this->publishRules->handle($context);
         $this->publishControllers->handle($context);
+        $this->publishUiAssets->handle($context);
         $this->publishPages->handle($context);
         $this->repairPublishedAuthPages->handle($context);
         $this->publishTests->handle($context);

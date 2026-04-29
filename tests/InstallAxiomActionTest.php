@@ -1961,6 +1961,59 @@ it('uses password store routes in vue reset password pages', function () {
     }
 });
 
+it('publishes vue auth ui assets required by the public auth pages', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+
+    mkdir($basePath, 0777, true);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+        'dependencies' => [
+            '@inertiajs/vue3' => '^3.0',
+            'vue' => '^3.5',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+    mkdir($basePath.'/routes', 0777, true);
+    file_put_contents($basePath.'/routes/web.php', "<?php\n\n");
+
+    $action = new InstallAxiomAction(new Filesystem);
+
+    try {
+        $result = $action->handle(
+            new InstallSelections(
+                aiGuidelines: AiGuidelinePreset::None,
+                installAiSkills: false,
+                authRoutes: AuthRoutesPreset::AppManaged,
+                installAuthScaffold: true,
+                installSsr: false,
+                installArchitectureGuidelines: false,
+                installQualityGuidelines: false,
+                installStrictLaravelDefaults: false,
+                installComposerScripts: false,
+                overwriteFiles: false,
+            ),
+            $basePath,
+        );
+
+        expect($result->written)->toContain('resources/js/components/InputError.vue')
+            ->and($result->written)->toContain('resources/js/components/TextLink.vue')
+            ->and($result->written)->toContain('resources/js/layouts/AuthLayout.vue')
+            ->and($basePath.'/resources/js/components/InputError.vue')->toBeFile()
+            ->and($basePath.'/resources/js/components/TextLink.vue')->toBeFile()
+            ->and($basePath.'/resources/js/components/ui/button/Button.vue')->toBeFile()
+            ->and($basePath.'/resources/js/layouts/AuthLayout.vue')->toBeFile();
+    } finally {
+        deleteDirectoryForInstallActionTest($basePath);
+    }
+});
+
 it('repairs already published vue reset password pages without overwriting the page', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
 
