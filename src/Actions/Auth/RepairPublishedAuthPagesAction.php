@@ -43,8 +43,7 @@ final readonly class RepairPublishedAuthPagesAction
             return;
         }
 
-        $this->files->put($path, $updated);
-        $context->recordWritten($relativePath);
+        $context->putFile($this->files, $relativePath, $updated);
     }
 
     private function repairReactHeadingImports(InstallContext $context): void
@@ -84,8 +83,7 @@ final readonly class RepairPublishedAuthPagesAction
                 continue;
             }
 
-            $this->files->put($path, $updated);
-            $context->recordWritten($relativePath);
+            $context->putFile($this->files, $relativePath, $updated);
         }
     }
 }

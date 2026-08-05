@@ -9,6 +9,7 @@ use SimaoCurado\Axiom\Data\InstallSelections;
 use SimaoCurado\Axiom\Enums\AiGuidelinePreset;
 use SimaoCurado\Axiom\Enums\AuthRoutesPreset;
 use SimaoCurado\Axiom\Enums\DebugToolPreset;
+use SimaoCurado\Axiom\Exceptions\InstallStepFailedException;
 
 it('does not overwrite existing files without force', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
@@ -52,6 +53,28 @@ it('does not overwrite existing files without force', function () {
         deleteDirectoryForInstallActionTest($basePath);
     }
 });
+
+it('wraps step failures with the step label', function () {
+    $action = new InstallAxiomAction(new Filesystem);
+
+    $action->handle(
+        new InstallSelections(
+            aiGuidelines: AiGuidelinePreset::None,
+            installAiSkills: false,
+            authRoutes: AuthRoutesPreset::AppManaged,
+            installAuthScaffold: false,
+            installSsr: false,
+            installArchitectureGuidelines: false,
+            installQualityGuidelines: false,
+            installStrictLaravelDefaults: false,
+            installComposerScripts: false,
+        ),
+        sys_get_temp_dir(),
+        static function (): void {
+            throw new RuntimeException('boom');
+        },
+    );
+})->throws(InstallStepFailedException::class, 'Axiom installation failed while: Publishing AI skills.');
 
 it('writes claude guidelines to a claude file', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
@@ -2233,6 +2256,20 @@ Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 PHP);
+    mkdir($basePath.'/resources/js/pages', 0777, true);
+    file_put_contents($basePath.'/resources/js/pages/Welcome.vue', <<<'VUE'
+<script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
+
+defineProps<{
+    canRegister: boolean;
+}>();
+</script>
+
+<template>
+    <Link v-if="canRegister" :href="route('register')">Register</Link>
+</template>
+VUE);
 
     $action = new InstallAxiomAction(new Filesystem);
 
@@ -2254,17 +2291,24 @@ PHP);
         );
 
         $webRoutes = (string) file_get_contents($basePath.'/routes/web.php');
+        $welcome = (string) file_get_contents($basePath.'/resources/js/pages/Welcome.vue');
 
         expect($result->written)->toContain('app/Actions/Fortify/CreateNewUser.php')
             ->toContain('app/Actions/Fortify/ResetUserPassword.php')
             ->toContain('app/Actions/Fortify/.gitkeep')
             ->toContain('app/Actions/CreateUser.php')
+            ->toContain('resources/js/pages/Welcome.vue')
             ->and(file_exists($basePath.'/app/Actions/Fortify'))->toBeFalse()
             ->and(file_exists($basePath.'/app/Actions/CreateUser.php'))->toBeTrue()
-            ->and($webRoutes)->toContain("Route::inertia('/', 'Welcome')->name('home');")
+            ->and($webRoutes)->toContain('use Inertia\\Inertia;')
+            ->and($webRoutes)->toContain("Route::get('/', fn () => Inertia::render('Welcome'))->name('home');")
+            ->and($webRoutes)->not->toContain('Route::inertia')
             ->and($webRoutes)->not->toContain('canRegister')
             ->and($webRoutes)->not->toContain('Features::registration')
-            ->and($webRoutes)->not->toContain('use Laravel\\Fortify\\Features;');
+            ->and($webRoutes)->not->toContain('use Laravel\\Fortify\\Features;')
+            ->and($welcome)->not->toContain('canRegister: boolean')
+            ->and($welcome)->not->toContain('v-if="canRegister"')
+            ->and($welcome)->toContain('<Link :href="route(\'register\')">Register</Link>');
     } finally {
         deleteDirectoryForInstallActionTest($basePath);
     }

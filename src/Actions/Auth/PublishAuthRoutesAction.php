@@ -47,13 +47,12 @@ final readonly class PublishAuthRoutesAction
         }
 
         if (! $hasChanges || $updated === $contents) {
-            $context->recordSkipped('routes/web.php');
+            $context->recordSkipped('routes/web.php', 'Auth routes are already present.');
 
             return;
         }
 
-        $this->files->put($routesPath, $updated);
-        $context->recordWritten('routes/web.php');
+        $context->putFile($this->files, 'routes/web.php', $updated);
     }
 
     private function ensureControllerImports(string $contents): string

@@ -4,7 +4,7 @@ Use this skill when introducing request, response, or domain transfer objects.
 
 ## Conventions
 
-- Place DTOs in `app/Dto`
+- Place DTOs in `app/DTO`
 - Prefer `final readonly class`
 - Keep DTOs explicit and typed
 - Use DTOs at application boundaries instead of loose arrays

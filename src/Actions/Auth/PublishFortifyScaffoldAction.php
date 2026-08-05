@@ -114,15 +114,7 @@ final readonly class PublishFortifyScaffoldAction
 
     private function put(InstallContext $context, string $relativePath, string $content): void
     {
-        $path = $context->basePath.'/'.$relativePath;
-        $directory = dirname($path);
-
-        if (! $this->files->isDirectory($directory)) {
-            $this->files->makeDirectory($directory, 0755, true);
-        }
-
-        $this->files->put($path, $content);
-        $context->recordWritten($relativePath);
+        $context->putFile($this->files, $relativePath, $content);
     }
 
     /**

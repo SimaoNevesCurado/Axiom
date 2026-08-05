@@ -16,7 +16,7 @@ final readonly class RegisterBootstrapProviderAction
         $providersPath = $context->basePath.'/bootstrap/providers.php';
 
         if (! $this->files->exists($providersPath)) {
-            $context->recordSkipped('bootstrap/providers.php');
+            $context->recordSkipped('bootstrap/providers.php', 'bootstrap/providers.php does not exist.');
 
             return;
         }
@@ -24,7 +24,7 @@ final readonly class RegisterBootstrapProviderAction
         $contents = (string) $this->files->get($providersPath);
 
         if (str_contains($contents, $provider)) {
-            $context->recordSkipped('bootstrap/providers.php');
+            $context->recordSkipped('bootstrap/providers.php', 'Provider is already registered.');
 
             return;
         }
@@ -32,7 +32,7 @@ final readonly class RegisterBootstrapProviderAction
         $needle = '];';
 
         if (! str_contains($contents, $needle)) {
-            $context->recordSkipped('bootstrap/providers.php');
+            $context->recordSkipped('bootstrap/providers.php', 'Could not find providers array terminator.');
 
             return;
         }
@@ -40,13 +40,11 @@ final readonly class RegisterBootstrapProviderAction
         $updated = str_replace($needle, "    {$provider},\n];", $contents);
 
         if ($updated === $contents && ! $context->selections->overwriteFiles) {
-            $context->recordSkipped('bootstrap/providers.php');
+            $context->recordSkipped('bootstrap/providers.php', 'No provider registration changes were needed.');
 
             return;
         }
 
-        $this->files->put($providersPath, $updated);
-
-        $context->recordWritten('bootstrap/providers.php');
+        $context->putFile($this->files, 'bootstrap/providers.php', $updated);
     }
 }

@@ -1,7 +1,9 @@
 <?php
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Str;
-use SimaoCurado\Axiom\Commands\AxiomCommand;
+use SimaoCurado\Axiom\Support\ProjectDetector;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 it('installs the selected presets non-interactively', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
@@ -82,6 +84,201 @@ it('installs the selected presets non-interactively', function () {
     }
 });
 
+it('keeps installed project files stable when run again without force', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+    $originalBasePath = base_path();
+
+    mkdir($basePath, 0777, true);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    app()->setBasePath($basePath);
+
+    $arguments = [
+        '--ai' => 'boost,claude',
+        '--skills' => true,
+        '--actions' => true,
+        '--quality' => true,
+        '--strict' => true,
+        '--scripts' => true,
+        '--phpstan' => true,
+        '--rector' => true,
+        '--pint' => true,
+        '--oxlint' => true,
+        '--prettier' => true,
+        '--no-interaction' => true,
+    ];
+
+    try {
+        $this->artisan('axiom:install', $arguments)->assertExitCode(0);
+
+        $files = [
+            'AGENTS.md',
+            'CLAUDE.md',
+            '.ai/skills/actions.md',
+            '.ai/architecture.md',
+            '.ai/quality.md',
+            'composer.json',
+            'package.json',
+            'bootstrap/providers.php',
+            'app/Providers/AxiomServiceProvider.php',
+        ];
+
+        $before = snapshotInstallCommandFiles($basePath, $files);
+
+        $this->artisan('axiom:install', $arguments)->assertExitCode(0);
+
+        expect(snapshotInstallCommandFiles($basePath, $files))->toBe($before);
+    } finally {
+        app()->setBasePath($originalBasePath);
+        deleteDirectoryForInstallCommandTest($basePath);
+    }
+});
+
+it('reports dry run changes without touching the host project', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+    $originalBasePath = base_path();
+
+    mkdir($basePath, 0777, true);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    $before = snapshotInstallCommandFiles($basePath, [
+        'composer.json',
+        'package.json',
+        'bootstrap/providers.php',
+    ]);
+
+    app()->setBasePath($basePath);
+
+    try {
+        $this->artisan('axiom:install', [
+            '--ai' => 'boost',
+            '--skills' => true,
+            '--actions' => true,
+            '--quality' => true,
+            '--strict' => true,
+            '--scripts' => true,
+            '--phpstan' => true,
+            '--oxlint' => true,
+            '--dry-run' => true,
+            '--no-interaction' => true,
+        ])->assertExitCode(0);
+
+        expect(snapshotInstallCommandFiles($basePath, [
+            'composer.json',
+            'package.json',
+            'bootstrap/providers.php',
+        ]))->toBe($before)
+            ->and($basePath.'/AGENTS.md')->not->toBeFile()
+            ->and($basePath.'/.ai/skills/actions.md')->not->toBeFile()
+            ->and($basePath.'/app/Providers/AxiomServiceProvider.php')->not->toBeFile();
+    } finally {
+        app()->setBasePath($originalBasePath);
+        deleteDirectoryForInstallCommandTest($basePath);
+    }
+});
+
+it('outputs dry run results as json for automation', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+    $originalBasePath = base_path();
+
+    mkdir($basePath, 0777, true);
+    mkdir($basePath.'/bootstrap', 0777, true);
+    file_put_contents($basePath.'/composer.json', json_encode([
+        'name' => 'acme/demo',
+        'require' => [
+            'laravel/framework' => '^12.0',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/package.json', json_encode([
+        'name' => 'demo',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    file_put_contents($basePath.'/bootstrap/providers.php', "<?php\n\nreturn [\n];\n");
+
+    app()->setBasePath($basePath);
+
+    try {
+        [$exitCode, $output] = callAxiomInstallCommandWithBufferedOutput([
+            '--ai' => 'boost',
+            '--skills' => true,
+            '--actions' => true,
+            '--quality' => true,
+            '--strict' => true,
+            '--scripts' => true,
+            '--phpstan' => true,
+            '--oxlint' => true,
+            '--dry-run' => true,
+            '--json' => true,
+            '--no-interaction' => true,
+        ]);
+
+        expect($exitCode)->toBe(0);
+
+        /** @var array<string, mixed> $payload */
+        $payload = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+
+        expect($payload['success'])->toBeTrue()
+            ->and($payload['dryRun'])->toBeTrue()
+            ->and($payload['planned'])->toContain('AGENTS.md')
+            ->toContain('composer.json')
+            ->and($payload['written'])->toBe([])
+            ->and($payload['steps'])->toBeArray()
+            ->and($payload['changes'])->toBeArray()
+            ->and($output)->not->toContain('Axiom installer finished')
+            ->and($basePath.'/AGENTS.md')->not->toBeFile();
+    } finally {
+        app()->setBasePath($originalBasePath);
+        deleteDirectoryForInstallCommandTest($basePath);
+    }
+});
+
+it('outputs invalid option failures as json', function () {
+    $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
+    $originalBasePath = base_path();
+
+    mkdir($basePath, 0777, true);
+    app()->setBasePath($basePath);
+
+    try {
+        [$exitCode, $output] = callAxiomInstallCommandWithBufferedOutput([
+            '--ai' => 'invalid',
+            '--json' => true,
+            '--no-interaction' => true,
+        ]);
+
+        expect($exitCode)->toBe(1);
+
+        /** @var array<string, mixed> $payload */
+        $payload = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+
+        expect($payload['success'])->toBeFalse()
+            ->and($payload['error'])->toContain('Invalid --ai value [invalid]')
+            ->and($output)->not->toContain('ERROR');
+    } finally {
+        app()->setBasePath($originalBasePath);
+        deleteDirectoryForInstallCommandTest($basePath);
+    }
+});
+
 it('detects auth scaffold when login routes already exist in routes/web.php', function () {
     $basePath = sys_get_temp_dir().'/axiom-'.Str::uuid();
     $originalBasePath = base_path();
@@ -102,11 +299,7 @@ PHP);
     app()->setBasePath($basePath);
 
     try {
-        $command = app(AxiomCommand::class);
-        $method = new ReflectionMethod($command, 'hasAuthScaffold');
-        $method->setAccessible(true);
-
-        expect($method->invoke($command))->toBeTrue();
+        expect((new ProjectDetector)->hasAuthScaffold())->toBeTrue();
     } finally {
         app()->setBasePath($originalBasePath);
         deleteDirectoryForInstallCommandTest($basePath);
@@ -169,6 +362,34 @@ PHP);
         deleteDirectoryForInstallCommandTest($basePath);
     }
 });
+
+/**
+ * @param  list<string>  $files
+ * @return array<string, string|null>
+ */
+function snapshotInstallCommandFiles(string $basePath, array $files): array
+{
+    $snapshot = [];
+
+    foreach ($files as $file) {
+        $path = $basePath.'/'.$file;
+        $snapshot[$file] = file_exists($path) ? hash_file('sha256', $path) : null;
+    }
+
+    return $snapshot;
+}
+
+/**
+ * @param  array<string, mixed>  $arguments
+ * @return array{int, string}
+ */
+function callAxiomInstallCommandWithBufferedOutput(array $arguments): array
+{
+    $output = new BufferedOutput;
+    $exitCode = app(Kernel::class)->call('axiom:install', $arguments, $output);
+
+    return [$exitCode, $output->fetch()];
+}
 
 function deleteDirectoryForInstallCommandTest(string $path): void
 {

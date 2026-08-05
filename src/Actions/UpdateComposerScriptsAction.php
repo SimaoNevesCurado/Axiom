@@ -21,7 +21,7 @@ final readonly class UpdateComposerScriptsAction
         $composerPath = $context->basePath.'/composer.json';
 
         if (! $this->files->exists($composerPath)) {
-            $context->recordSkipped('composer.json');
+            $context->recordSkipped('composer.json', 'composer.json does not exist.');
 
             return;
         }
@@ -30,7 +30,7 @@ final readonly class UpdateComposerScriptsAction
         $composer = json_decode((string) $this->files->get($composerPath), true);
 
         if (! is_array($composer)) {
-            $context->recordSkipped('composer.json');
+            $context->recordSkipped('composer.json', 'composer.json is not valid JSON.');
 
             return;
         }
@@ -38,7 +38,7 @@ final readonly class UpdateComposerScriptsAction
         $composer['scripts'] ??= [];
 
         if (! is_array($composer['scripts'])) {
-            $context->recordSkipped('composer.json');
+            $context->recordSkipped('composer.json', 'composer.json scripts must be an object.');
 
             return;
         }
@@ -58,19 +58,18 @@ final readonly class UpdateComposerScriptsAction
         }
 
         if (! $hasChanges) {
-            $context->recordSkipped('composer.json');
+            $context->recordSkipped('composer.json', 'Selected Composer scripts are already present.');
 
             return;
         }
 
         ksort($composer['scripts']);
 
-        $this->files->put(
-            $composerPath,
+        $context->putFile(
+            $this->files,
+            'composer.json',
             json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
         );
-
-        $context->recordWritten('composer.json');
     }
 
     /**

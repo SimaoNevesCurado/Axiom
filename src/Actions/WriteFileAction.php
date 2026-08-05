@@ -16,19 +16,11 @@ final readonly class WriteFileAction
         $path = $context->basePath.'/'.$relativePath;
 
         if ($this->files->exists($path) && ! $context->selections->overwriteFiles) {
-            $context->recordSkipped($relativePath);
+            $context->recordSkipped($relativePath, 'File already exists. Use --force to overwrite it.');
 
             return;
         }
 
-        $directory = dirname($path);
-
-        if (! $this->files->isDirectory($directory)) {
-            $this->files->makeDirectory($directory, 0755, true);
-        }
-
-        $this->files->put($path, $content);
-
-        $context->recordWritten($relativePath);
+        $context->putFile($this->files, $relativePath, $content);
     }
 }

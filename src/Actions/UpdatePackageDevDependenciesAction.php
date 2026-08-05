@@ -21,7 +21,7 @@ final readonly class UpdatePackageDevDependenciesAction
         $packagePath = $context->basePath.'/package.json';
 
         if (! $this->files->exists($packagePath)) {
-            $context->recordSkipped('package.json');
+            $context->recordSkipped('package.json', 'package.json does not exist.');
 
             return;
         }
@@ -30,7 +30,7 @@ final readonly class UpdatePackageDevDependenciesAction
         $package = json_decode((string) $this->files->get($packagePath), true);
 
         if (! is_array($package)) {
-            $context->recordSkipped('package.json');
+            $context->recordSkipped('package.json', 'package.json is not valid JSON.');
 
             return;
         }
@@ -38,7 +38,7 @@ final readonly class UpdatePackageDevDependenciesAction
         $package['devDependencies'] ??= [];
 
         if (! is_array($package['devDependencies'])) {
-            $context->recordSkipped('package.json');
+            $context->recordSkipped('package.json', 'package.json devDependencies must be an object.');
 
             return;
         }
@@ -58,19 +58,18 @@ final readonly class UpdatePackageDevDependenciesAction
         }
 
         if (! $hasChanges) {
-            $context->recordSkipped('package.json');
+            $context->recordSkipped('package.json', 'Selected frontend dev dependencies are already present.');
 
             return;
         }
 
         ksort($package['devDependencies']);
 
-        $this->files->put(
-            $packagePath,
+        $context->putFile(
+            $this->files,
+            'package.json',
             json_encode($package, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
         );
-
-        $context->recordWritten('package.json');
     }
 
     /**

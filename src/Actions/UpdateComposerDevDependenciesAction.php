@@ -22,7 +22,7 @@ final readonly class UpdateComposerDevDependenciesAction
         $composerPath = $context->basePath.'/composer.json';
 
         if (! $this->files->exists($composerPath)) {
-            $context->recordSkipped('composer.json');
+            $context->recordSkipped('composer.json', 'composer.json does not exist.');
 
             return;
         }
@@ -31,7 +31,7 @@ final readonly class UpdateComposerDevDependenciesAction
         $composer = json_decode((string) $this->files->get($composerPath), true);
 
         if (! is_array($composer)) {
-            $context->recordSkipped('composer.json');
+            $context->recordSkipped('composer.json', 'composer.json is not valid JSON.');
 
             return;
         }
@@ -39,7 +39,7 @@ final readonly class UpdateComposerDevDependenciesAction
         $composer['require-dev'] ??= [];
 
         if (! is_array($composer['require-dev'])) {
-            $context->recordSkipped('composer.json');
+            $context->recordSkipped('composer.json', 'composer.json require-dev must be an object.');
 
             return;
         }
@@ -59,19 +59,18 @@ final readonly class UpdateComposerDevDependenciesAction
         }
 
         if (! $hasChanges) {
-            $context->recordSkipped('composer.json');
+            $context->recordSkipped('composer.json', 'Selected Composer dev dependencies are already present.');
 
             return;
         }
 
         ksort($composer['require-dev']);
 
-        $this->files->put(
-            $composerPath,
+        $context->putFile(
+            $this->files,
+            'composer.json',
             json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
         );
-
-        $context->recordWritten('composer.json');
     }
 
     /**

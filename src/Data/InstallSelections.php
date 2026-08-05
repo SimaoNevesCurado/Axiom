@@ -36,6 +36,7 @@ final readonly class InstallSelections
         public bool $installNpmCheckUpdates = false,
         public DebugToolPreset $debugTool = DebugToolPreset::None,
         public bool $overwriteFiles = false,
+        public bool $dryRun = false,
         public array $aiGuidelinePresets = [],
         public array $aiSkills = [],
         public bool $installAuthScaffold = true,
